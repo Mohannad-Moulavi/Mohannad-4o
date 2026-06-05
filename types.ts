@@ -7,6 +7,13 @@ export interface AdvancedSeoAnalysis {
   internalLinkingSuggestions: string[];
 }
 
+export interface RelatedInternalLink {
+  title: string;
+  url: string;
+  type: 'category' | 'product' | 'page' | 'search';
+  reason: string;
+}
+
 export interface ProductData {
   correctedProductName: string;
   englishProductName: string;
@@ -18,6 +25,7 @@ export interface ProductData {
   metaDescription: string;
   altImageText: string;
   advancedSeoAnalysis: AdvancedSeoAnalysis;
+  relatedInternalLinks?: RelatedInternalLink[];
 }
 
 export interface ImageFile {

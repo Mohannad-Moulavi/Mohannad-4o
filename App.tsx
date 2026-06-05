@@ -153,6 +153,39 @@ const OutputSection: React.FC<OutputSectionProps> = ({ label, content, isHtml = 
     );
 };
 
+
+const InternalLinksBox: React.FC<{ links?: ProductData['relatedInternalLinks'] }> = ({ links }) => {
+    if (!links || links.length === 0) {
+        return <p className="text-gray-500 text-xs italic">لینک مرتبطی از سایت پیدا نشد.</p>;
+    }
+
+    return (
+        <div className="space-y-3">
+            {links.map((link, index) => (
+                <div key={`${link.url}-${index}`} className="bg-gray-700/50 rounded-lg p-3 border border-gray-600">
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p className="font-semibold text-white">{link.title}</p>
+                            <p className="text-xs text-gray-400 mt-1">{link.reason}</p>
+                        </div>
+                        <span className="shrink-0 text-[11px] px-2 py-1 rounded-full bg-blue-900/50 text-blue-200 border border-blue-700">
+                            {link.type === 'category' ? 'دسته‌بندی' : link.type === 'product' ? 'محصول' : link.type === 'search' ? 'جستجو' : 'صفحه'}
+                        </span>
+                    </div>
+                    <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block mt-2 text-sm text-blue-300 hover:text-blue-200 break-all direction-ltr"
+                    >
+                        {link.url}
+                    </a>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 const AdvancedAnalysisItem: React.FC<{title: string, items: string[]}> = ({ title, items }) => (
     <div>
         <h4 className="font-semibold text-gray-400">{title}</h4>
@@ -388,7 +421,15 @@ function App() {
                     <OutputSection label="توضیحات متا (Meta Description)" content={generatedContent.metaDescription} copyText={generatedContent.metaDescription} />
                      {/* 8. Alt Image Text */}
                     <OutputSection label="متن جایگزین تصویر (Alt Text)" content={generatedContent.altImageText} copyText={generatedContent.altImageText} />
-                    {/* 9. Advanced SEO Analysis */}
+                    {/* 9. Related Internal Links */}
+                    <OutputSection
+                        label="لینک‌های داخلی مرتبط"
+                        content={<InternalLinksBox links={generatedContent.relatedInternalLinks} />}
+                        copyText={(generatedContent.relatedInternalLinks || [])
+                            .map((link) => `${link.title}\n${link.url}\n${link.reason}`)
+                            .join('\n\n')}
+                    />
+                    {/* 10. Advanced SEO Analysis */}
                     <OutputSection 
                         label="Advanced SEO Analysis (تجزیه و تحلیل سئو برتر)"
                         content={<AdvancedSeoTabs analysis={generatedContent.advancedSeoAnalysis} />}
@@ -456,6 +497,10 @@ function App() {
             border-top-color: #4a5568; /* gray-600 */
             margin-top: 1.5rem;
             margin-bottom: 1.5rem;
+           }
+           .direction-ltr {
+            direction: ltr;
+            text-align: left;
            }
           @keyframes fade-in {
             from { opacity: 0; transform: translateY(-10px); }

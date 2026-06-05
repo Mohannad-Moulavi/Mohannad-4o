@@ -49,3 +49,9 @@ APP_URL=https://your-vercel-domain.vercel.app
 - `z-ai/glm-4.5-air:free`
 
 کلید API داخل پروژه ذخیره نشده است تا روی GitHub یا Vercel لو نرود.
+
+
+## Vercel Environment Variable
+
+Set `OPENROUTER_API_KEY` in Vercel Project Settings → Environment Variables.
+
