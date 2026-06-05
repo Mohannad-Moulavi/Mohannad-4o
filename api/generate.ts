@@ -30,6 +30,10 @@ const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DUCKDUCKGO_HTML_URL = 'https://duckduckgo.com/html/';
 const DEFAULT_INTERNAL_SITE_URL = 'https://noon-valqalam.ir';
 const CURRENT_YEAR = new Date().getFullYear();
+const WEB_SEARCH_TIMEOUT_MS = 3500;
+const WEB_SEARCH_TOTAL_TIMEOUT_MS = 7500;
+const INTERNAL_LINK_FETCH_TIMEOUT_MS = 2500;
+const INTERNAL_LINK_TOTAL_TIMEOUT_MS = 6500;
 
 const MODELS: OpenRouterModel[] = [
   // Vision first: reads product photo, label, brand, size/count, color and package text.
@@ -361,6 +365,35 @@ function cleanSearchText(input: string): string {
     .trim();
 }
 
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function withFallbackTimeout<T>(promise: Promise<T>, timeoutMs: number, fallbackValue: T): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timeoutId = setTimeout(() => resolve(fallbackValue), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 function extractDuckDuckGoResults(html: string): string[] {
   const results: string[] = [];
   const blocks = html.match(/<div[^>]+class="[^"]*result[^"]*"[\s\S]*?(?=<div[^>]+class="[^"]*result[^"]*"|<\/body>)/gi) || [];
@@ -413,13 +446,13 @@ async function searchWebForProduct(productName: string, briefDescription: string
   for (const query of queries) {
     try {
       const url = `${DUCKDUCKGO_HTML_URL}?q=${encodeURIComponent(query)}&kl=wt-wt`;
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: 'GET',
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; Mohannad4oBot/1.0; +https://mohannad-4o.vercel.app)',
           Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
-      });
+      }, WEB_SEARCH_TIMEOUT_MS);
 
       if (!response.ok) continue;
       const html = await response.text();
@@ -585,47 +618,54 @@ function parseInternalAnchors(html: string, baseUrl: string, source: string): In
 }
 
 async function fetchTextFromInternalSite(url: string): Promise<string> {
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; Mohannad4oInternalLinkBot/1.0)',
       Accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
     },
-  });
+  }, INTERNAL_LINK_FETCH_TIMEOUT_MS);
 
   if (!response.ok) throw new Error(`Internal site fetch failed: ${response.status}`);
   return response.text();
 }
 
 async function collectInternalLinksFromSite(baseUrl: string, queries: string[]): Promise<InternalLinkCandidate[]> {
-  const candidates: InternalLinkCandidate[] = [];
+  const tasks: Array<Promise<InternalLinkCandidate[]>> = [];
   const pagesToScan = uniqueStrings([
     `${baseUrl}/`,
     `${baseUrl}/shop/`,
     `${baseUrl}/product-category/cosmetics/`,
     `${baseUrl}/product-category/hypermarket/`,
-  ], 8);
+  ], 6);
 
   for (const url of pagesToScan) {
-    try {
-      const html = await fetchTextFromInternalSite(url);
-      candidates.push(...parseInternalAnchors(html, baseUrl, url));
-    } catch (error) {
-      console.warn(`Internal navigation scan failed for ${url}:`, error);
-    }
+    tasks.push((async () => {
+      try {
+        const html = await fetchTextFromInternalSite(url);
+        return parseInternalAnchors(html, baseUrl, url);
+      } catch (error) {
+        console.warn(`Internal navigation scan failed for ${url}:`, error);
+        return [];
+      }
+    })());
   }
 
-  for (const query of queries.slice(0, 5)) {
-    try {
-      const searchUrl = `${baseUrl}/?s=${encodeURIComponent(query)}&post_type=product`;
-      const html = await fetchTextFromInternalSite(searchUrl);
-      candidates.push(...parseInternalAnchors(html, baseUrl, searchUrl));
-    } catch (error) {
-      console.warn(`Internal product search failed for ${query}:`, error);
-    }
+  for (const query of queries.slice(0, 4)) {
+    tasks.push((async () => {
+      try {
+        const searchUrl = `${baseUrl}/?s=${encodeURIComponent(query)}&post_type=product`;
+        const html = await fetchTextFromInternalSite(searchUrl);
+        return parseInternalAnchors(html, baseUrl, searchUrl);
+      } catch (error) {
+        console.warn(`Internal product search failed for ${query}:`, error);
+        return [];
+      }
+    })());
   }
 
-  return candidates;
+  const settled = await Promise.allSettled(tasks);
+  return settled.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
 }
 
 function scoreInternalLink(candidate: InternalLinkCandidate, queries: string[], generatedData: ProductData): InternalLinkCandidate {
@@ -711,15 +751,25 @@ async function findRelatedInternalLinks(productName: string, briefDescription: s
 
   if (queries.length === 0) return [];
 
-  try {
-    const candidates = await collectInternalLinksFromSite(baseUrl, queries);
-    const ranked = dedupeAndRankInternalLinks(candidates, queries, generatedData);
-    if (ranked.length > 0) return ranked;
-  } catch (error) {
-    console.warn('Internal link discovery failed:', error);
+  const fallbackLinks = buildInternalFallbackLinks(baseUrl, queries, generatedData);
+
+  if (process.env.ENABLE_INTERNAL_LINKS === 'false') {
+    return fallbackLinks;
   }
 
-  return buildInternalFallbackLinks(baseUrl, queries, generatedData);
+  const discoveryPromise = (async () => {
+    try {
+      const candidates = await collectInternalLinksFromSite(baseUrl, queries);
+      const ranked = dedupeAndRankInternalLinks(candidates, queries, generatedData);
+      if (ranked.length > 0) return ranked;
+    } catch (error) {
+      console.warn('Internal link discovery failed:', error);
+    }
+
+    return fallbackLinks;
+  })();
+
+  return withFallbackTimeout(discoveryPromise, INTERNAL_LINK_TOTAL_TIMEOUT_MS, fallbackLinks);
 }
 
 function buildUserPrompt(
@@ -1037,7 +1087,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ message: 'OPENROUTER_API_KEY در تنظیمات Vercel تعریف نشده است.' });
     }
 
-    const webSearchContext = await searchWebForProduct(productName, briefDescription || '', Boolean(isNutsOrDriedFruit));
+    const webSearchContext = await withFallbackTimeout(
+      searchWebForProduct(productName, briefDescription || '', Boolean(isNutsOrDriedFruit)).catch((error) => {
+        console.warn('Web search failed safely:', error);
+        return '';
+      }),
+      WEB_SEARCH_TOTAL_TIMEOUT_MS,
+      '',
+    );
 
     const descriptionGenerationInstruction = isNutsOrDriedFruit ? nutsDescriptionPrompt : standardDescriptionPrompt;
     const fullSystemInstruction = `${systemInstruction}\n\n# قوانین قطعی برای فیلد fullDescription:\n${descriptionGenerationInstruction}`;
@@ -1057,7 +1114,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           Boolean(isNutsOrDriedFruit),
           webSearchContext,
         );
-        const relatedInternalLinks = await findRelatedInternalLinks(productName, briefDescription || '', generatedData);
+        const relatedInternalLinks = await findRelatedInternalLinks(productName, briefDescription || '', generatedData).catch((error) => {
+          console.warn('Internal links failed safely:', error);
+          return [] as RelatedInternalLink[];
+        });
         const responseData: ProductData = {
           ...generatedData,
           relatedInternalLinks,

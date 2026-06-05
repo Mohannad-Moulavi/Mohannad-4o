@@ -16,9 +16,22 @@ export const generateProductContent = async (
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'An unknown server error occurred.' }));
-      // Use the server's message, but have a fallback.
-      const errorMessage = errorData.message || `Error ${response.status}: ${response.statusText}`;
+      const rawText = await response.text().catch(() => '');
+      let errorData: { message?: string; details?: unknown } = {};
+
+      try {
+        errorData = rawText ? JSON.parse(rawText) : {};
+      } catch (_error) {
+        errorData = {};
+      }
+
+      const fallbackMessage = response.status === 504
+        ? 'درخواست بیش از حد طول کشید. تولید متن دوباره امتحان شود؛ جستجوی لینک داخلی حالا زمان‌دار شده است.'
+        : rawText && rawText.length < 300
+          ? rawText
+          : `خطای سرور ${response.status}: ${response.statusText || 'پاسخ نامعتبر از Vercel'}`;
+
+      const errorMessage = errorData.message || fallbackMessage;
       throw new Error(errorMessage);
     }
 
