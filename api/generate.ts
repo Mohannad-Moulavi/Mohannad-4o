@@ -165,7 +165,7 @@ const systemInstruction = `
 5. اگر چیزی از تصویر یا توضیحات مشخص نیست، حدس خطرناک نزن؛ اما ویژگی‌های عمومی و رایج همان دسته محصول را طبیعی اضافه کن.
 6. ساختار پایه fullDescription را حفظ کن، اما بخش تکمیلی را فقط متناسب با نوع همان محصول انتخاب کن. برای همه محصولات تیترهای نامناسب و تکراری مثل «چرا انتخاب هوشمندانه است» ننویس.
 7. در fullDescription از Markdown، علامت ---، تیترهای h2/h3، جدول، JSON داخلی یا متن بیرون از HTML استفاده نکن.
-7.1. هیچ لینک داخلی، تگ <a> یا URL داخل fullDescription قرار نده.
+7.1. داخل fullDescription دقیقاً ۱ لینک داخلی طبیعی و قابل ویرایش بگذار. لینک باید با تگ <a href="#">متن لینک مرتبط</a> باشد. URL واقعی ننویس؛ href همیشه # باشد. لینک باید در دل یکی از پاراگراف‌ها بیاید، مثل نمونه: <a href="#">انواع قهوه</a>. بخش جداگانه برای لینک نساز.
 8. اگر بخش «اطلاعات تازه از جستجوی وب» در پیام کاربر وجود داشت، آن را منبع تازه‌تر از دانش داخلی خودت بدان و برای محصولاتی مثل موبایل، مدل‌های جدید، محصولات ترند و کالاهای وابسته به سال/نسخه، حتماً از همان اطلاعات استفاده کن.
 9. نام مدل/نسخه محصول را به مدل قدیمی‌تر تبدیل نکن. اگر کاربر iPhone 17، Galaxy S26 یا هر مدل جدیدی نوشت، مجاز نیستی آن را با iPhone 13، iPhone 15 یا مدل قدیمی جایگزین کنی؛ مگر اینکه جستجوی وب صراحتاً نشان دهد نام واردشده اشتباه است.
 10. اگر جستجوی وب اطلاعات قطعی کافی نداد، با همان نام کاربر محتوا بساز و از حدس زدن مشخصات فنی عددی، قیمت، تاریخ عرضه یا ویژگی‌های قطعی خودداری کن.
@@ -178,7 +178,7 @@ const nutsDescriptionPrompt = `
 - طول متن: کل توضیحات باید بین ۲۲۰ تا ۳۰۰ کلمه باشد.
 - خوانایی: جملات باید کوتاه و روان باشند. حداقل در ۲۵٪ جملات از کلمات انتقالی استفاده کن و میزان استفاده از صدای مجهول را به کمتر از ۱۰٪ محدود کن.
 - استفاده از کلیدواژه کانونی: کلیدواژه باید در پاراگراف اول بیاید و به طور طبیعی ۳ تا ۴ بار در کل متن تکرار شود.
-- لینک‌سازی داخلی داخل متن ممنوع است: در fullDescription هیچ تگ <a>، href یا URL ننویس.
+- داخل متن fullDescription دقیقاً ۱ لینک داخلی طبیعی و قابل ویرایش قرار بده. لینک باید به شکل <a href="#">آجیل و خشکبار</a> یا دسته دقیق‌تر مثل <a href="#">پسته</a> باشد. URL واقعی ننویس و href همیشه # باشد. لینک را در دل یکی از پاراگراف‌ها بیاور، نه در بخش جداگانه.
 
 # 2. ساختار و فرمت متن بسیار مهم
 خروجی fullDescription باید دقیقاً با این ترتیب باشد:
@@ -246,7 +246,7 @@ const standardDescriptionPrompt = `
 - بعد از مقدمه و بعد از هر بخش، از <hr /> استفاده کن.
 - برای ویژگی‌ها و مشخصات از <ul> و <li> استفاده کن.
 - از Markdown، علامت ---، جدول و تیترهای h2/h3 استفاده نکن.
-- هیچ لینک، تگ <a>، href یا URL داخل fullDescription نگذار.
+- داخل fullDescription دقیقاً ۱ لینک داخلی طبیعی و قابل ویرایش قرار بده. لینک باید فقط به شکل <a href="#">عبارت مرتبط</a> باشد؛ URL واقعی ننویس و href همیشه # باشد. لینک را طبیعی داخل متن مزایا، پیشنهاد مصرف یا بخش تکمیلی قرار بده؛ بخش جداگانه برای لینک نساز.
 - تیتر «💡 چرا این محصول انتخاب هوشمندانه‌ای است؟» را برای همه محصولات ننویس. فقط وقتی محصول واقعاً نیاز به توضیح ارزش خرید/انتخاب دارد، آن هم با متن مخصوص همان محصول استفاده شود.
 - در هر خروجی دقیقاً یک «بخش تکمیلی متناسب با محصول» اضافه کن. این بخش باید با نوع محصول سازگار باشد و جایگزین تیترهای نامناسب عمومی شود.
 
@@ -589,12 +589,16 @@ function extractJson(text: string): ProductData {
 }
 
 
-function stripInlineLinksFromHtml(html: string): string {
-  return String(html || '')
-    .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, '$1')
-    .replace(/https?:\/\/[^\s<"']+/gi, '')
+function normalizeInlineLinksInHtml(html: string): string {
+  let output = String(html || '')
+    // لینک‌های واقعی یا خارجی نباید وارد توضیحات شوند؛ فقط جایگاه قابل ویرایش با href="#" بماند.
+    .replace(/<a\b([^>]*)href=["'][^"']*["']([^>]*)>/gi, '<a href="#">')
+    .replace(/<a\b(?![^>]*href=)([^>]*)>/gi, '<a href="#">')
+    .replace(/https?:\/\/[^\s<"']+/gi, '#')
     .replace(/\s{2,}/g, ' ')
     .trim();
+
+  return output;
 }
 
 function normalizeSlug(slug: string): string {
@@ -607,12 +611,214 @@ function normalizeSlug(slug: string): string {
     .replace(/^-|-$/g, '');
 }
 
+
+function escapeHtmlText(value: string): string {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+
+function getNaturalInlineLinkSentence(
+  rawProductName: string,
+  data: ProductData,
+  isNutsOrDriedFruit: boolean,
+): string {
+  const text = [
+    rawProductName,
+    data.correctedProductName,
+    data.focusKeyword,
+    data.englishProductName,
+    ...(data.advancedSeoAnalysis?.semanticEntities || []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  const has = (patterns: RegExp[]) => patterns.some((pattern) => pattern.test(text));
+
+  if (isNutsOrDriedFruit || has([/آجیل|خشکبار|پسته|بادام|گردو|فندق|کشمش|خرما|انجیر|توت خشک|مویز|تخمه|cashew|pistachio|almond|walnut|date/])) {
+    return 'همچنین برای انتخاب‌های بیشتر، می‌توانید محصولات مرتبط در بخش <a href="#">آجیل و خشکبار</a> را هم بررسی کنید.';
+  }
+
+  if (has([/کافی\s*میت|coffee\s*mate|creamer|پودر خامه|قهوه|کافی|نسکافه|کاپوچینو|coffee|nescafe/])) {
+    return 'همچنین برای تجربه طعم‌های متنوع‌تر، می‌توانید آن را همراه با <a href="#">انواع قهوه</a> استفاده کنید.';
+  }
+
+  if (has([/شامپو|ماسک مو|نرم.?کننده مو|سرم مو|تقویت مو|مو\b|hair|shampoo|clear|کلیر|هد اند شولدرز|head\s*&?\s*shoulders|pantene|پنتن/])) {
+    return 'برای تکمیل روتین مراقبت مو، بررسی محصولات بخش <a href="#">مراقبت و زیبایی مو</a> نیز انتخاب مناسبی است.';
+  }
+
+  if (has([/خمیر دندان|مسواک|دهان|دندان|نخ دندان|دهانشویه|tooth|toothpaste|oral|mouth/])) {
+    return 'برای کامل‌تر شدن مراقبت روزانه، می‌توانید محصولات مرتبط در بخش <a href="#">بهداشت دهان و دندان</a> را هم مشاهده کنید.';
+  }
+
+  if (has([/کرم|لوسیون|ضد آفتاب|آبرسان|مرطوب.?کننده|پوست|آرایشی|بهداشتی|ریمل|رژ|پنکک|کازمتیک|cosmetic|cream|lotion|sunscreen|skin/])) {
+    return 'برای تکمیل خرید، محصولات مرتبط در بخش <a href="#">لوازم آرایشی و بهداشتی</a> را هم می‌توانید بررسی کنید.';
+  }
+
+  if (has([/پاد لباسشویی|مایع لباسشویی|پودر لباسشویی|نرم کننده لباس|مایع ظرفشویی|قرص ظرفشویی|جرم.?گیر|شوینده|پاک.?کننده|لباسشویی|ظرفشویی|detergent|cleaner|dishwasher/])) {
+    return 'برای داشتن نتیجه بهتر در نظافت خانه، مشاهده محصولات مرتبط در بخش <a href="#">مواد شوینده</a> نیز مفید است.';
+  }
+
+  if (has([/موبایل|گوشی|آیفون|iphone|samsung|سامسونگ|شیائومی|xiaomi|لپ.?تاپ|تبلت|هدفون|هندزفری|شارژر|دیجیتال|galaxy|airpods/])) {
+    return 'برای تکمیل خرید، بررسی لوازم مرتبط در بخش <a href="#">کالای دیجیتال</a> نیز می‌تواند به انتخاب بهتر کمک کند.';
+  }
+
+  if (has([/برنج|روغن|چای|نوشیدنی|شکلات|بیسکویت|خوراکی|غذایی|رب|تن ماهی|ماکارونی|زعفران|rice|tea|food/])) {
+    return 'برای خرید کامل‌تر، می‌توانید محصولات مشابه در بخش <a href="#">هایپرمارکت و مواد غذایی</a> را هم بررسی کنید.';
+  }
+
+  return 'برای مشاهده گزینه‌های مشابه، می‌توانید محصولات مرتبط در بخش <a href="#">محصولات مرتبط</a> را هم بررسی کنید.';
+}
+
+function injectNaturalInlineInternalLink(html: string, sentence: string): string {
+  const cleanHtml = normalizeInlineLinksInHtml(html);
+  if (!cleanHtml) return cleanHtml;
+  if (/<a\b[^>]*href=["']#["'][^>]*>/i.test(cleanHtml)) {
+    return cleanHtml;
+  }
+
+  const benefitsPattern = /(<h5>\s*✨\s*مزایای استفاده:\s*<\/h5>\s*<p>)([\s\S]*?)(<\/p>)/i;
+  if (benefitsPattern.test(cleanHtml)) {
+    return cleanHtml.replace(benefitsPattern, (_match, open, body, close) => `${open}${String(body).trim()} ${sentence}${close}`);
+  }
+
+  const firstParagraphPattern = /(<p>)([\s\S]*?)(<\/p>)/i;
+  if (firstParagraphPattern.test(cleanHtml)) {
+    return cleanHtml.replace(firstParagraphPattern, (_match, open, body, close) => `${open}${String(body).trim()} ${sentence}${close}`);
+  }
+
+  return `${cleanHtml}\n<p>${sentence}</p>`;
+}
+
+function ensureNaturalInlineInternalLink(
+  data: ProductData,
+  rawProductName: string,
+  isNutsOrDriedFruit: boolean,
+): ProductData {
+  const sentence = getNaturalInlineLinkSentence(rawProductName, data, isNutsOrDriedFruit);
+  return {
+    ...data,
+    fullDescription: injectNaturalInlineInternalLink(data.fullDescription, sentence),
+  };
+}
+
+function getManualInternalLinkAdvice(
+  rawProductName: string,
+  data: ProductData,
+  isNutsOrDriedFruit: boolean,
+): { target: string; anchor: string } {
+  const text = [
+    rawProductName,
+    data.correctedProductName,
+    data.focusKeyword,
+    data.englishProductName,
+    ...(data.advancedSeoAnalysis?.semanticEntities || []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  const has = (patterns: RegExp[]) => patterns.some((pattern) => pattern.test(text));
+
+  if (isNutsOrDriedFruit || has([/آجیل|خشکبار|پسته|بادام|گردو|فندق|کشمش|خرما|انجیر|توت خشک|مویز|تخمه|cashew|pistachio|almond|walnut|date/])) {
+    return {
+      target: 'دسته‌بندی آجیل و خشکبار، یا دسته دقیق همان محصول مثل پسته، بادام، گردو یا خرما',
+      anchor: data.focusKeyword || data.correctedProductName || 'خرید آجیل و خشکبار',
+    };
+  }
+
+  if (has([/شامپو|ماسک مو|نرم.?کننده مو|سرم مو|تقویت مو|مو\b|hair|shampoo|clear|کلیر|هد اند شولدرز|head\s*&?\s*shoulders|pantene|پنتن/])) {
+    return {
+      target: 'دسته‌بندی شامپو؛ اگر نبود، دسته‌بندی مراقبت و زیبایی مو؛ اگر برند در سایت هست، صفحه یا جستجوی برند',
+      anchor: data.focusKeyword || data.correctedProductName || 'خرید شامپو',
+    };
+  }
+
+  if (has([/خمیر دندان|مسواک|دهان|دندان|نخ دندان|دهانشویه|tooth|toothpaste|oral|mouth/])) {
+    return {
+      target: 'دسته‌بندی بهداشت دهان و دندان؛ اگر نبود، دسته‌بندی مادر لوازم آرایشی و بهداشتی',
+      anchor: data.focusKeyword || data.correctedProductName || 'خرید محصولات بهداشت دهان و دندان',
+    };
+  }
+
+  if (has([/کرم|لوسیون|ضد آفتاب|آبرسان|مرطوب.?کننده|پوست|آرایشی|بهداشتی|ریمل|رژ|پنکک|کازمتیک|cosmetic|cream|lotion|sunscreen|skin/])) {
+    return {
+      target: 'دسته‌بندی دقیق محصول در لوازم آرایشی و بهداشتی؛ اگر نبود، دسته‌بندی مادر لوازم آرایشی و بهداشتی',
+      anchor: data.focusKeyword || data.correctedProductName || 'خرید لوازم آرایشی و بهداشتی',
+    };
+  }
+
+  if (has([/پاد لباسشویی|مایع لباسشویی|پودر لباسشویی|نرم کننده لباس|مایع ظرفشویی|قرص ظرفشویی|جرم.?گیر|شوینده|پاک.?کننده|لباسشویی|ظرفشویی|detergent|cleaner|dishwasher/])) {
+    return {
+      target: 'دسته‌بندی مواد شوینده یا دسته دقیق محصول مثل شوینده لباس، ظرفشویی یا پاک‌کننده سطوح',
+      anchor: data.focusKeyword || data.correctedProductName || 'خرید مواد شوینده',
+    };
+  }
+
+  if (has([/موبایل|گوشی|آیفون|iphone|samsung|سامسونگ|شیائومی|xiaomi|لپ.?تاپ|تبلت|هدفون|هندزفری|شارژر|دیجیتال|galaxy|airpods/])) {
+    return {
+      target: 'دسته‌بندی موبایل و کالای دیجیتال، یا صفحه برند/مدل مرتبط در سایت',
+      anchor: data.focusKeyword || data.correctedProductName || 'خرید کالای دیجیتال',
+    };
+  }
+
+  if (has([/برنج|روغن|چای|قهوه|نوشیدنی|شکلات|بیسکویت|خوراکی|غذایی|رب|تن ماهی|ماکارونی|زعفران|rice|tea|coffee|food/])) {
+    return {
+      target: 'دسته‌بندی خوراکی و هایپرمارکت، یا دسته دقیق‌تر همان محصول',
+      anchor: data.focusKeyword || data.correctedProductName || 'خرید محصولات خوراکی',
+    };
+  }
+
+  return {
+    target: 'دسته‌بندی اصلی همین محصول؛ اگر دسته دقیق وجود ندارد، دسته مادر مرتبط یا صفحه جستجوی برند/مدل در سایت',
+    anchor: data.focusKeyword || data.correctedProductName || 'مشاهده محصولات مرتبط',
+  };
+}
+
+function appendManualInternalLinkMarker(
+  html: string,
+  rawProductName: string,
+  data: ProductData,
+  isNutsOrDriedFruit: boolean,
+): string {
+  const cleanHtml = String(html || '').trim();
+  if (!cleanHtml || cleanHtml.includes('جایگاه پیشنهادی لینک داخلی')) {
+    return cleanHtml;
+  }
+
+  const advice = getManualInternalLinkAdvice(rawProductName, data, isNutsOrDriedFruit);
+  const marker = `\n<hr />\n<h5>🔗 جایگاه پیشنهادی لینک داخلی:</h5>\n<p><strong>راهنمای ویرایش:</strong> این بخش لینک اتوماتیک نمی‌سازد تا سرعت و پایداری سایت حفظ شود. اینجا یک لینک داخلی مرتبط اضافه کنید. بهترین مقصد پیشنهادی: <strong>${escapeHtmlText(advice.target)}</strong>. متن لینک پیشنهادی: <strong>${escapeHtmlText(advice.anchor)}</strong>.</p>\n<hr />`;
+
+  return `${cleanHtml}${marker}`;
+}
+
+function addManualInternalLinkMarkerToProductData(
+  data: ProductData,
+  rawProductName: string,
+  isNutsOrDriedFruit: boolean,
+): ProductData {
+  return {
+    ...data,
+    fullDescription: appendManualInternalLinkMarker(
+      data.fullDescription,
+      rawProductName,
+      data,
+      isNutsOrDriedFruit,
+    ),
+  };
+}
+
 function normalizeProductData(data: ProductData): ProductData {
   return {
     ...data,
     correctedProductName: String(data.correctedProductName || '').trim(),
     englishProductName: String(data.englishProductName || '').trim(),
-    fullDescription: stripInlineLinksFromHtml(String(data.fullDescription || '')).trim(),
+    fullDescription: normalizeInlineLinksInHtml(String(data.fullDescription || '')).trim(),
     shortDescription: String(data.shortDescription || '').replace(/<[^>]*>/g, '').trim(),
     seoTitle: String(data.seoTitle || '').replace(/<[^>]*>/g, '').trim(),
     slug: normalizeSlug(data.slug || data.englishProductName || data.correctedProductName),
@@ -823,7 +1029,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           Boolean(isNutsOrDriedFruit),
           webSearchContext,
         );
-        const responseData: ProductData = generatedData;
+        const responseData: ProductData = ensureNaturalInlineInternalLink(
+          generatedData,
+          productName,
+          Boolean(isNutsOrDriedFruit),
+        );
 
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('X-Mohannad-Model', model.id);
