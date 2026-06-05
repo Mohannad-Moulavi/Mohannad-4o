@@ -26,7 +26,7 @@ export const generateProductContent = async (
       }
 
       const fallbackMessage = response.status === 504
-        ? 'درخواست بیش از حد طول کشید. تولید متن دوباره امتحان شود؛ جستجوی لینک داخلی حالا زمان‌دار شده است.'
+        ? 'درخواست بیش از حد طول کشید. تولید متن را دوباره امتحان کنید یا عکس کوچک‌تری ارسال کنید.'
         : rawText && rawText.length < 300
           ? rawText
           : `خطای سرور ${response.status}: ${response.statusText || 'پاسخ نامعتبر از Vercel'}`;

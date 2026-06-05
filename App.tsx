@@ -24,48 +24,73 @@ const CheckIcon: React.FC = () => (
 );
 
 
+
+const compressImageFile = (file: File): Promise<ImageFile> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('امکان خواندن تصویر وجود ندارد.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('فرمت تصویر پشتیبانی نشد.'));
+      img.onload = () => {
+        const maxSide = 1280;
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const width = Math.max(1, Math.round(img.width * scale));
+        const height = Math.max(1, Math.round(img.height * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('مرورگر امکان پردازش تصویر را ندارد.'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        const base64 = dataUrl.split(',')[1];
+        if (!base64) {
+          reject(new Error('فشرده‌سازی تصویر ناموفق بود.'));
+          return;
+        }
+        resolve({
+          base64,
+          mimeType: 'image/jpeg',
+          name: file.name.replace(/\.[^.]+$/, '') + '.jpg',
+        });
+      };
+      img.src = String(reader.result || '');
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
 interface ImageUploaderProps {
   image: ImageFile | null;
   setImage: (image: ImageFile | null) => void;
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result?.toString().split(',')[1];
-        if (base64String) {
-          setImage({
-            base64: base64String,
-            mimeType: file.type,
-            name: file.name
-          });
-        }
-      };
-      reader.readAsDataURL(file);
+  const processFile = async (file: File | undefined) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    try {
+      const optimizedImage = await compressImageFile(file);
+      setImage(optimizedImage);
+    } catch (error) {
+      console.error('Image optimization failed:', error);
+      alert(error instanceof Error ? error.message : 'خطا در پردازش تصویر');
     }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    void processFile(event.target.files?.[0]);
   };
 
   const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    const file = event.dataTransfer.files?.[0];
-     if (file && file.type.startsWith('image/')) {
-       const reader = new FileReader();
-       reader.onloadend = () => {
-         const base64String = reader.result?.toString().split(',')[1];
-         if (base64String) {
-           setImage({
-             base64: base64String,
-             mimeType: file.type,
-             name: file.name
-           });
-         }
-       };
-       reader.readAsDataURL(file);
-     }
+    void processFile(event.dataTransfer.files?.[0]);
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
@@ -98,7 +123,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ image, setImage }) => {
           <div className="text-center">
             <UploadIcon />
             <p className="mt-2 text-sm text-gray-400">تصویر را بکشید و رها کنید یا کلیک کنید</p>
-            <p className="text-xs text-gray-500">PNG, JPG, WEBP</p>
+            <p className="text-xs text-gray-500">PNG, JPG, WEBP - تصویر قبل از ارسال سبک می‌شود</p>
           </div>
         )}
         <input id="file-upload" name="file-upload" type="file" className="sr-only" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} />
@@ -154,38 +179,6 @@ const OutputSection: React.FC<OutputSectionProps> = ({ label, content, isHtml = 
 };
 
 
-const InternalLinksBox: React.FC<{ links?: ProductData['relatedInternalLinks'] }> = ({ links }) => {
-    if (!links || links.length === 0) {
-        return <p className="text-gray-500 text-xs italic">لینک مرتبطی از سایت پیدا نشد.</p>;
-    }
-
-    return (
-        <div className="space-y-3">
-            {links.map((link, index) => (
-                <div key={`${link.url}-${index}`} className="bg-gray-700/50 rounded-lg p-3 border border-gray-600">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="font-semibold text-white">{link.title}</p>
-                            <p className="text-xs text-gray-400 mt-1">{link.reason}</p>
-                        </div>
-                        <span className="shrink-0 text-[11px] px-2 py-1 rounded-full bg-blue-900/50 text-blue-200 border border-blue-700">
-                            {link.type === 'category' ? 'دسته‌بندی' : link.type === 'product' ? 'محصول' : link.type === 'search' ? 'جستجو' : 'صفحه'}
-                        </span>
-                    </div>
-                    <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block mt-2 text-sm text-blue-300 hover:text-blue-200 break-all direction-ltr"
-                    >
-                        {link.url}
-                    </a>
-                </div>
-            ))}
-        </div>
-    );
-};
-
 const AdvancedAnalysisItem: React.FC<{title: string, items: string[]}> = ({ title, items }) => (
     <div>
         <h4 className="font-semibold text-gray-400">{title}</h4>
@@ -206,7 +199,6 @@ const AdvancedSeoTabs: React.FC<{ analysis: ProductData['advancedSeoAnalysis'] }
     const tabs = {
         keywords: 'کلیدواژه‌ها',
         intent: 'هدف جستجو',
-        linking: 'لینک‌سازی داخلی',
     };
 
     const renderContent = () => {
@@ -239,8 +231,6 @@ const AdvancedSeoTabs: React.FC<{ analysis: ProductData['advancedSeoAnalysis'] }
                         <p className="text-gray-200 bg-gray-700/50 px-2 py-1 rounded inline-block mt-1">{analysis.searchIntent}</p>
                     </div>
                 );
-            case 'linking':
-                return <AdvancedAnalysisItem title="Internal Linking Suggestions (پیشنهاد لینک داخلی)" items={analysis.internalLinkingSuggestions} />;
             default:
                 return null;
         }
@@ -421,15 +411,7 @@ function App() {
                     <OutputSection label="توضیحات متا (Meta Description)" content={generatedContent.metaDescription} copyText={generatedContent.metaDescription} />
                      {/* 8. Alt Image Text */}
                     <OutputSection label="متن جایگزین تصویر (Alt Text)" content={generatedContent.altImageText} copyText={generatedContent.altImageText} />
-                    {/* 9. Related Internal Links */}
-                    <OutputSection
-                        label="لینک‌های داخلی مرتبط"
-                        content={<InternalLinksBox links={generatedContent.relatedInternalLinks} />}
-                        copyText={(generatedContent.relatedInternalLinks || [])
-                            .map((link) => `${link.title}\n${link.url}\n${link.reason}`)
-                            .join('\n\n')}
-                    />
-                    {/* 10. Advanced SEO Analysis */}
+                    {/* 9. Advanced SEO Analysis */}
                     <OutputSection 
                         label="Advanced SEO Analysis (تجزیه و تحلیل سئو برتر)"
                         content={<AdvancedSeoTabs analysis={generatedContent.advancedSeoAnalysis} />}
