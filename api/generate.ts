@@ -28,15 +28,17 @@ type ChatContentPart =
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DUCKDUCKGO_HTML_URL = 'https://duckduckgo.com/html/';
+const BING_SEARCH_URL = 'https://www.bing.com/search';
 const CURRENT_YEAR = new Date().getFullYear();
 const WEB_SEARCH_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TIMEOUT_MS || 10000);
-const WEB_SEARCH_TOTAL_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TOTAL_TIMEOUT_MS || 12000);
-const AI_MODEL_TIMEOUT_MS = Number(process.env.AI_MODEL_TIMEOUT_MS || 36000);
+const WEB_SEARCH_TOTAL_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TOTAL_TIMEOUT_MS || 24000);
+const AI_MODEL_TIMEOUT_MS = Number(process.env.AI_MODEL_TIMEOUT_MS || 50000);
 
 const MODELS: OpenRouterModel[] = [
   // Fast professional vision first. Gemini Flash-Lite is much faster for reading product images/labels.
   // It is paid/very cheap on OpenRouter; if the account has no credit, the free fallbacks below will be tried.
-  { id: process.env.PRIMARY_VISION_MODEL || 'google/gemini-2.5-flash-lite', vision: true },
+  { id: process.env.PRIMARY_VISION_MODEL || 'google/gemini-2.5-flash', vision: true },
+  { id: 'google/gemini-2.5-flash-lite', vision: true },
 
   // Free vision fallbacks. openrouter/free routes to an available free model matching image support when possible.
   { id: 'openrouter/free', vision: true },
@@ -161,7 +163,7 @@ const systemInstruction = `
 1. خروجی فقط یک آبجکت JSON معتبر باشد؛ هیچ متن، توضیح، مارک‌داون یا کدبلاک خارج از JSON ننویس.
 2. زبان همه فیلدهای فارسی باید روان، فروشگاهی، طبیعی، یونیک و قابل انتشار باشد. از جمله‌های مصنوعی، تبلیغ اغراق‌آمیز، ترکیب‌های نامأنوس و وعده‌های غیرواقعی پرهیز کن. متن باید مثل توضیح محصول واقعی فروشگاه نوشته شود، نه متن ماشینی.
 3. نام خام محصول را اصلاح کن. اگر کاربر نام ناقص، غلط، انگلیسی/فارسی مخلوط یا بدون جزئیات داد، نام صحیح و کامل فروشگاهی بساز.
-3.1. اصلاح نام یعنی بهتر و کامل‌تر کردن همان محصول، نه تبدیل آن به محصول دیگر. اگر نام محصول نامفهوم یا سرچ ناقص بود، همان محصول خام را حفظ کن و فقط غلط املایی/ترجمه‌ای را اصلاح کن. هیچ‌وقت محصول دیگری را جایگزین نکن.
+3.1. اصلاح نام یعنی بهتر و کامل‌تر کردن همان محصول، نه تبدیل آن به محصول دیگر. اگر نام محصول نامفهوم یا سرچ ناقص بود، همان محصول خام را حفظ کن و فقط غلط املایی/ترجمه‌ای را اصلاح کن. هیچ‌وقت محصول دیگری را جایگزین نکن. حداقل یکی از کلمات هویتی نام خام محصول باید در correctedProductName و focusKeyword باقی بماند، مگر اینکه تصویر یا توضیح کاربر خلاف آن را صریحاً نشان دهد.
 4. اگر تصویر ارسال شده، متن روی تصویر، برند، تعداد، وزن، حجم، رنگ، رایحه، طعم، مدل، کشور سازنده/کشور مبدأ برند و ویژگی‌های روی بسته‌بندی را بخوان و در correctedProductName، مشخصات و متن لحاظ کن. اگر تصویر واضح است، اطلاعات روی تصویر از حدس ذهنی مهم‌تر است.
 4.1. هر اطلاعات قطعی که کاربر در نام یا توضیحات اولیه داده، مثل «برند»، «مدل»، «حجم»، «وزن»، «کشور مبدأ برند»، «کشور سازنده» و «نوع محصول»، باید بدون حذف و بدون تغییر معنی در fullDescription و مخصوصاً بخش «📦 مشخصات محصول» بیاید.
 4.2. اگر کاربر نوشته «کشور مبدأ برند: کره جنوبی»، همین مفهوم را با برچسب «کشور مبدأ برند: کره جنوبی» بنویس؛ آن را به «کشور سازنده» تبدیل نکن، مگر خود ورودی چنین گفته باشد.
@@ -446,6 +448,150 @@ function extractDuckDuckGoResults(html: string): string[] {
   return results;
 }
 
+
+function extractBingResults(html: string): string[] {
+  const results: string[] = [];
+  const blocks = html.match(/<li[^>]+class="[^"]*b_algo[^"]*"[\s\S]*?(?=<li[^>]+class="[^"]*b_algo[^"]*"|<\/ol>|<\/body>)/gi) || [];
+
+  for (const block of blocks) {
+    const titleMatch = block.match(/<h2[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>[\s\S]*?<\/h2>/i);
+    const snippetMatch = block.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+    const citeMatch = block.match(/<cite[^>]*>([\s\S]*?)<\/cite>/i);
+
+    const title = cleanSearchText(titleMatch?.[1] || '');
+    const snippet = cleanSearchText(snippetMatch?.[1] || '');
+    const url = cleanSearchText(citeMatch?.[1] || '');
+
+    if (title || snippet) {
+      results.push([title, snippet, url ? `منبع: ${url}` : ''].filter(Boolean).join(' — '));
+    }
+
+    if (results.length >= 5) break;
+  }
+
+  return results;
+}
+
+function normalizeSearchTokenText(value: string): string {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/آ/g, 'ا')
+    .replace(/[إأٱ]/g, 'ا')
+    .replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getProductIdentityTokens(productName: string): string[] {
+  const stopWords = new Set([
+    'خرید', 'قیمت', 'فروش', 'محصول', 'اورجینال', 'اصل', 'جدید', 'مدل', 'حجم', 'وزن', 'عدد', 'عددی',
+    'بسته', 'گرم', 'کیلو', 'کیلویی', 'میلی', 'لیتر', 'میل', 'مخصوص', 'برای', 'با', 'و', 'در', 'از', 'the',
+    'and', 'with', 'original', 'new', 'model', 'ml', 'g', 'kg', 'pcs'
+  ]);
+
+  const normalized = normalizeSearchTokenText(productName);
+  const tokens = normalized
+    .split(' ')
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2 && !stopWords.has(token));
+
+  return Array.from(new Set(tokens)).slice(0, 8);
+}
+
+function getProductAliases(tokens: string[]): string[] {
+  const aliases: string[] = [];
+  const joined = tokens.join(' ');
+
+  const add = (value: string) => {
+    const clean = normalizeSearchTokenText(value);
+    if (clean && !tokens.includes(clean) && !aliases.includes(clean)) aliases.push(clean);
+  };
+
+  for (const token of tokens) {
+    if (token === 'پنیر') add('cheese');
+    if (token === 'پوک' || token === 'پاک' || token === 'پک') add('puck');
+    if (token === 'کافی') add('coffee');
+    if (token === 'قهوه') add('coffee');
+    if (token === 'شامپو') add('shampoo');
+    if (token === 'خمیر') add('toothpaste');
+    if (token === 'دندان') add('toothpaste');
+    if (token === 'آیفون' || token === 'ایفون') add('iphone');
+  }
+
+  if (/پنیر/.test(joined) && /پوک|پاک|پک/.test(joined)) {
+    add('puck cheese');
+    add('puck cream cheese');
+  }
+
+  return aliases;
+}
+
+function scoreSearchResultRelevance(result: string, productName: string): number {
+  const normalizedResult = normalizeSearchTokenText(result);
+  const normalizedProduct = normalizeSearchTokenText(productName);
+  const tokens = getProductIdentityTokens(productName);
+  const aliases = getProductAliases(tokens);
+
+  let score = 0;
+  if (normalizedProduct && normalizedResult.includes(normalizedProduct)) score += 5;
+
+  for (const token of tokens) {
+    if (normalizedResult.includes(token)) score += token.length >= 4 ? 2 : 1;
+  }
+
+  for (const alias of aliases) {
+    if (normalizedResult.includes(alias)) score += alias.includes(' ') ? 3 : 2;
+  }
+
+  // Penalize obviously unrelated marketplace/category-only snippets that only match a generic word like cheese/shampoo.
+  const matchedStrongTokens = tokens.filter((token) => token.length >= 3 && normalizedResult.includes(token)).length;
+  const matchedAliases = aliases.filter((alias) => normalizedResult.includes(alias)).length;
+  if (tokens.length >= 2 && matchedStrongTokens === 0 && matchedAliases === 0) score -= 3;
+
+  return score;
+}
+
+function filterRelevantSearchResults(results: string[], productName: string): string[] {
+  return results
+    .map((result) => ({ result, score: scoreSearchResultRelevance(result, productName) }))
+    .filter((item) => item.score >= 2)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.result)
+    .slice(0, 8);
+}
+
+async function runDuckDuckGoSearch(query: string): Promise<string[]> {
+  const url = `${DUCKDUCKGO_HTML_URL}?q=${encodeURIComponent(query)}&kl=wt-wt`;
+  const response = await fetchWithTimeout(url, {
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; Mohannad4oBot/1.0; +https://mohannad-4o.vercel.app)',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    },
+  }, WEB_SEARCH_TIMEOUT_MS);
+
+  if (!response.ok) return [];
+  return extractDuckDuckGoResults(await response.text());
+}
+
+async function runBingSearch(query: string): Promise<string[]> {
+  const url = `${BING_SEARCH_URL}?q=${encodeURIComponent(query)}&setlang=fa-IR&cc=IR`;
+  const response = await fetchWithTimeout(url, {
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    },
+  }, WEB_SEARCH_TIMEOUT_MS);
+
+  if (!response.ok) return [];
+  return extractBingResults(await response.text());
+}
+
+
 function shouldSearchWeb(productName: string, briefDescription: string): boolean {
   const text = `${productName} ${briefDescription}`.toLowerCase();
   const modernSignals = [
@@ -461,54 +607,61 @@ async function searchWebForProduct(productName: string, briefDescription: string
   const normalizedName = productName.trim();
   if (!normalizedName) return '';
 
-  // Accurate-search mode: search is enabled for every product category.
-  // It gets more time than the ultra-fast version so the model receives real product facts,
-  // but all requests are still bounded to avoid Vercel timeouts.
   const contextWords = String(briefDescription || '')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 160);
+    .slice(0, 180);
+
+  const tokens = getProductIdentityTokens(normalizedName);
+  const aliases = getProductAliases(tokens);
+  const aliasQuery = aliases.length ? aliases.slice(0, 3).join(' ') : '';
 
   const queries = [
+    `"${normalizedName}"`,
     `"${normalizedName}" مشخصات ویژگی ترکیبات حجم مدل کشور مبدا برند`,
-    `${normalizedName} ${contextWords} مشخصات محصول ویژگی اصلی کاربرد`,
+    `${normalizedName} ${aliasQuery} ${contextWords} محصول مشخصات کاربرد`,
+    `${normalizedName} قیمت خرید مشخصات محصول`,
   ]
     .map((query) => query.replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((query, index, arr) => arr.indexOf(query) === index)
+    .slice(0, 4);
 
-  const collected: string[] = [];
+  const rawResults: string[] = [];
 
   await Promise.allSettled(queries.map(async (query) => {
-    try {
-      const url = `${DUCKDUCKGO_HTML_URL}?q=${encodeURIComponent(query)}&kl=wt-wt`;
-      const response = await fetchWithTimeout(url, {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; Mohannad4oBot/1.0; +https://mohannad-4o.vercel.app)',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-      }, WEB_SEARCH_TIMEOUT_MS);
+    const sourceResults = await Promise.allSettled([
+      runDuckDuckGoSearch(query),
+      runBingSearch(query),
+    ]);
 
-      if (response.ok) {
-        const html = await response.text();
-        const results = extractDuckDuckGoResults(html);
-        for (const result of results) {
-          if (!collected.includes(result)) collected.push(result);
-          if (collected.length >= 6) break;
-        }
+    for (const result of sourceResults) {
+      if (result.status !== 'fulfilled') continue;
+      for (const item of result.value) {
+        if (!rawResults.includes(item)) rawResults.push(item);
       }
-    } catch (error) {
-      console.warn(`Accurate web search failed for query "${query}":`, error);
     }
   }));
 
-  if (collected.length === 0) return '';
+  const relevantResults = filterRelevantSearchResults(rawResults, normalizedName);
+
+  if (relevantResults.length === 0) {
+    return [
+      `تاریخ امروز برای تشخیص تازگی اطلاعات: ${new Date().toISOString().slice(0, 10)}`,
+      `نام دقیق واردشده توسط کاربر: ${normalizedName}`,
+      `وضعیت سرچ: نتیجه دقیق و قابل اتکا برای همین نام پیدا نشد یا نتایج نامرتبط بودند.`,
+      `قانون سخت‌گیرانه: محصول را تغییر نده، برند/مدل/نوع جدید اختراع نکن، و فقط با همان نام کاربر یک متن فروشگاهی عمومی اما امن و واقع‌گرایانه بساز.`,
+      `توکن‌های هویتی محصول که باید حفظ شوند: ${tokens.join('، ') || normalizedName}`,
+    ].join('\n');
+  }
 
   return [
     `تاریخ امروز برای تشخیص تازگی اطلاعات: ${new Date().toISOString().slice(0, 10)}`,
     `نام دقیق واردشده توسط کاربر: ${normalizedName}`,
-    `قانون دقت: فقط نتایج مرتبط با همین نام/برند/مدل را استفاده کن. اگر نتایج درباره محصول مشابه یا مدل دیگر بود، آن را نادیده بگیر و نام محصول کاربر را عوض نکن.`,
-    ...collected.slice(0, 6).map((item, index) => `${index + 1}. ${item}`),
+    `توکن‌های هویتی محصول که باید در نام و متن حفظ شوند: ${tokens.join('، ') || normalizedName}`,
+    `قانون دقت: فقط نتایجی را استفاده کن که واقعاً درباره همین نام/برند/مدل هستند. اگر بخشی از نتیجه درباره محصول مشابه یا مدل دیگر است، آن بخش را نادیده بگیر.`,
+    `قانون ضدکپی: از نتایج فقط برای فهم مشخصات و ویژگی‌ها الهام بگیر؛ هیچ جمله‌ای را عیناً کپی نکن.`,
+    ...relevantResults.slice(0, 8).map((item, index) => `${index + 1}. ${item}`),
   ].join('\n');
 }
 
@@ -529,7 +682,7 @@ function buildUserPrompt(
 
   userPrompt += `\n- دسته خروجی: ${isNutsOrDriedFruit ? 'آجیل یا خشکبار' : 'محصول عمومی/غیرخشکبار'}`;
   userPrompt += `\n\nوظیفه تو:\n1. نام محصول را اصلاح و کامل کن. correctedProductName باید بهترین نام فروشگاهی فارسی باشد، نه فقط تکرار نام خام کاربر.
-1.1. correctedProductName باید همان محصولی باشد که کاربر نوشته؛ اگر سرچ نتیجه نامرتبط آورد، به سرچ اعتماد نکن و محصول را عوض نکن.\n2. اگر محصول تعداد، وزن، حجم، مدل، برند، سری، رنگ، رایحه یا طعم دارد و از نام/عکس/توضیح مشخص است، آن را به نام و مشخصات اضافه کن.\n3. fullDescription را با قالب پایه بساز و بخش تکمیلی را فقط بر اساس نیاز و نوع همان محصول انتخاب کن؛ تیترهای نامناسب را برای همه محصولات تکرار نکن.\n4. متن باید مخصوص همین محصول باشد و کلی‌گویی بی‌ارزش نداشته باشد.\n5. اگر اطلاعاتی مطمئن نیست، آن را به صورت عدد/مدل قطعی ننویس.
+1.1. correctedProductName باید همان محصولی باشد که کاربر نوشته؛ اگر سرچ نتیجه نامرتبط آورد، به سرچ اعتماد نکن و محصول را عوض نکن. اگر کاربر نوشته «پنیر پوک»، نباید آن را به پنیر دیگری، خامه، نوشیدنی یا محصول ساختگی تبدیل کنی؛ فقط همان پنیر/برند/نام را با احتیاط اصلاح کن.\n2. اگر محصول تعداد، وزن، حجم، مدل، برند، سری، رنگ، رایحه یا طعم دارد و از نام/عکس/توضیح مشخص است، آن را به نام و مشخصات اضافه کن.\n3. fullDescription را با قالب پایه بساز و بخش تکمیلی را فقط بر اساس نیاز و نوع همان محصول انتخاب کن؛ تیترهای نامناسب را برای همه محصولات تکرار نکن.\n4. متن باید مخصوص همین محصول باشد و کلی‌گویی بی‌ارزش نداشته باشد.\n5. اگر اطلاعاتی مطمئن نیست، آن را به صورت عدد/مدل قطعی ننویس.
 6. اگر کاربر فیلدهایی مثل برند، مدل، حجم، کشور مبدأ برند، کشور مبدأ، کشور سازنده یا نوع محصول داده، همان‌ها را با همان برچسب در بخش 📦 مشخصات محصول حفظ کن و حذف نکن.`;
 
   if (productImage && imageAttachedForThisModel) {
@@ -969,6 +1122,31 @@ function improvePersianNaturalness(text: string): string {
     .trim();
 }
 
+
+function restoreRawIdentityIfModelSwappedProduct(data: ProductData, rawProductName: string): ProductData {
+  const rawTokens = getProductIdentityTokens(rawProductName);
+  if (rawTokens.length === 0) return data;
+
+  const correctedNormalized = normalizeSearchTokenText(data.correctedProductName || '');
+  const focusNormalized = normalizeSearchTokenText(data.focusKeyword || '');
+  const combined = `${correctedNormalized} ${focusNormalized}`;
+  const hasRawIdentity = rawTokens.some((token) => combined.includes(token));
+
+  if (hasRawIdentity) return data;
+
+  const safeName = rawProductName.trim();
+  if (!safeName) return data;
+
+  return {
+    ...data,
+    correctedProductName: safeName,
+    focusKeyword: safeName,
+    seoTitle: `خرید ${safeName}`.slice(0, 60),
+    metaDescription: `خرید ${safeName} با توضیحات کامل، مشخصات محصول و راهنمای انتخاب برای ثبت سفارش مطمئن‌تر.`,
+    altImageText: safeName,
+  };
+}
+
 function normalizeProductData(data: ProductData): ProductData {
   return {
     ...data,
@@ -1118,7 +1296,7 @@ async function callOpenRouter(
         throw new Error(`${model.id}: empty response from AI model.`);
       }
 
-      const generatedData = normalizeProductData(extractJson(text));
+      const generatedData = restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName);
       validateProductData(generatedData, isNutsOrDriedFruit);
       return generatedData;
     } catch (error) {

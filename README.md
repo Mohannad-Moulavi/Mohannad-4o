@@ -69,3 +69,12 @@ WEB_SEARCH_TOTAL_TIMEOUT_MS=12000
 AI_MODEL_TIMEOUT_MS=36000
 MAX_OUTPUT_TOKENS=4800
 ```
+
+
+## Patch notes
+
+- Accurate web search for every product category, with DuckDuckGo + Bing fallback.
+- Search results are filtered by product identity tokens so unrelated results are not sent to the model.
+- Primary model is `google/gemini-2.5-flash` for better vision and product understanding; Flash Lite remains as fallback.
+- If search cannot confirm a product, the app keeps the user's original product name instead of inventing another product.
+- Mohannad SEO HTML structure, Yoast fields, inline `<a href="#">...</a>` and origin/country fields are preserved.
