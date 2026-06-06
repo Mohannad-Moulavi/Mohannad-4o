@@ -71,7 +71,7 @@ const advancedSeoAnalysisSchema = {
     semanticEntities: {
       type: 'array',
       items: { type: 'string' },
-      description: 'موجودیت‌های معنایی کلیدی مانند برند، دسته‌بندی محصول، ویژگی‌های اصلی، تعداد، حجم، وزن یا مدل.',
+      description: 'موجودیت‌های معنایی کلیدی مانند برند، دسته‌بندی محصول، ویژگی‌های اصلی، تعداد، حجم، وزن، مدل، کشور مبدأ برند یا کشور سازنده.',
     },
     searchIntent: {
       type: 'string',
@@ -109,7 +109,7 @@ const productSchema = {
     fullDescription: {
       type: 'string',
       description:
-        'توضیحات کامل محصول با فرمت HTML دقیقاً طبق قالب تعیین‌شده. باید با پاراگراف مقدمه شروع شود و سپس بخش‌های ثابت با h5، ایموجی، ul/li، p و hr داشته باشد.',
+        'توضیحات کامل محصول با فرمت HTML دقیقاً طبق قالب تعیین‌شده. باید با پاراگراف مقدمه شروع شود و سپس بخش‌های h5، ایموجی، ul/li، p و hr داشته باشد. اطلاعات قطعی مثل برند، مدل، حجم/وزن و کشور مبدأ برند باید در بخش مشخصات محصول حفظ شود.',
     },
     shortDescription: {
       type: 'string',
@@ -161,9 +161,11 @@ const systemInstruction = `
 1. خروجی فقط یک آبجکت JSON معتبر باشد؛ هیچ متن، توضیح، مارک‌داون یا کدبلاک خارج از JSON ننویس.
 2. زبان همه فیلدهای فارسی باید روان، فروشگاهی، طبیعی، یونیک و قابل انتشار باشد. از جمله‌های مصنوعی، تبلیغ اغراق‌آمیز، ترکیب‌های نامأنوس و وعده‌های غیرواقعی پرهیز کن. متن باید مثل توضیح محصول واقعی فروشگاه نوشته شود، نه متن ماشینی.
 3. نام خام محصول را اصلاح کن. اگر کاربر نام ناقص، غلط، انگلیسی/فارسی مخلوط یا بدون جزئیات داد، نام صحیح و کامل فروشگاهی بساز.
-4. اگر تصویر ارسال شده، متن روی تصویر، برند، تعداد، وزن، حجم، رنگ، رایحه، طعم، مدل و ویژگی‌های روی بسته‌بندی را بخوان و در correctedProductName، مشخصات و متن لحاظ کن. اگر تصویر واضح است، اطلاعات روی تصویر از حدس ذهنی مهم‌تر است.
+4. اگر تصویر ارسال شده، متن روی تصویر، برند، تعداد، وزن، حجم، رنگ، رایحه، طعم، مدل، کشور سازنده/کشور مبدأ برند و ویژگی‌های روی بسته‌بندی را بخوان و در correctedProductName، مشخصات و متن لحاظ کن. اگر تصویر واضح است، اطلاعات روی تصویر از حدس ذهنی مهم‌تر است.
+4.1. هر اطلاعات قطعی که کاربر در نام یا توضیحات اولیه داده، مثل «برند»، «مدل»، «حجم»، «وزن»، «کشور مبدأ برند»، «کشور سازنده» و «نوع محصول»، باید بدون حذف و بدون تغییر معنی در fullDescription و مخصوصاً بخش «📦 مشخصات محصول» بیاید.
+4.2. اگر کاربر نوشته «کشور مبدأ برند: کره جنوبی»، همین مفهوم را با برچسب «کشور مبدأ برند: کره جنوبی» بنویس؛ آن را به «کشور سازنده» تبدیل نکن، مگر خود ورودی چنین گفته باشد.
 5. اگر چیزی از تصویر یا توضیحات مشخص نیست، حدس خطرناک نزن؛ اما ویژگی‌های عمومی و رایج همان دسته محصول را طبیعی اضافه کن.
-6. ساختار پایه fullDescription را حفظ کن، اما بخش تکمیلی را فقط متناسب با نوع همان محصول انتخاب کن. برای همه محصولات تیترهای نامناسب و تکراری مثل «چرا انتخاب هوشمندانه است» ننویس.
+6. ساختار پایه fullDescription را با الهام از قالب اصلی Mohannad SEO حفظ کن، اما بخش‌ها را پویا و متناسب با نوع همان محصول انتخاب کن. برای همه محصولات تیترهای نامناسب و تکراری مثل «چرا انتخاب هوشمندانه است» ننویس.
 7. در fullDescription از Markdown، علامت ---، تیترهای h2/h3، جدول، JSON داخلی یا متن بیرون از HTML استفاده نکن.
 7.1. در fullDescription دقیقاً ۱ لینک داخلی قابل ویرایش با تگ <a href="#">متن لینک مرتبط</a> قرار بده. لینک باید داخل یک جمله طبیعی و واقع‌گرایانه باشد، نه به شکل باکس جدا یا راهنمای ویرایش. اگر جمله لینک‌دار مصنوعی شد، جمله را بازنویسی کن تا منطقی شود؛ href همیشه باید # باشد.
 8. اگر بخش «اطلاعات تازه از جستجوی وب» در پیام کاربر وجود داشت، آن را منبع تازه‌تر از دانش داخلی خودت بدان و برای محصولاتی مثل موبایل، مدل‌های جدید، محصولات ترند و کالاهای وابسته به سال/نسخه، حتماً از همان اطلاعات استفاده کن.
@@ -229,6 +231,7 @@ const nutsDescriptionPrompt = `
   <li>نوع محصول: بر اساس نام اصلاح‌شده</li>
   <li>فرآوری: بر اساس اطلاعات موجود</li>
   <li>وزن/بسته‌بندی/برند: اگر از تصویر یا توضیح مشخص است</li>
+  <li>مبدأ/کشور مبدأ برند/کشور سازنده: فقط اگر از نام، تصویر یا توضیح مشخص است</li>
 </ul>
 <hr class="mohannad-divider">
 
@@ -261,7 +264,7 @@ const standardDescriptionPrompt = `
 - مزایا را با دلیل بنویس؛ مثلاً به جای «کیفیت بی‌نظیر»، بنویس «بافت یکنواختی به نوشیدنی می‌دهد» یا «استفاده روزانه را ساده‌تر می‌کند».
 - برای خوراکی‌ها و نوشیدنی‌ها، درباره طعم، بافت، روش مصرف، نگهداری و ترکیبات احتمالی بنویس؛ اما وعده سلامتی قطعی نده.
 - برای شوینده‌ها، درباره نوع مصرف، سطح/لباس مناسب، نگهداری و احتیاط بنویس؛ اما نتیجه تضمینی یا اغراق نکن.
-- برای آرایشی و بهداشتی، درباره نوع پوست/مو، روش مصرف و احتیاط بنویس؛ اما ادعای درمانی ننویس.
+- برای آرایشی و بهداشتی، درباره نوع پوست/مو، روش مصرف، ترکیبات شاخص و احتیاط بنویس؛ اما ادعای درمانی ننویس. اگر کشور مبدأ برند یا مدل محصول مشخص است، در مشخصات محصول حتماً بیاور.
 - برای دیجیتال، فقط اطلاعات قطعی از نام، تصویر یا وب سرچ را بنویس و مشخصات فنی را حدس نزن.
 
 # قالب پایه اجباری fullDescription
@@ -292,8 +295,11 @@ const standardDescriptionPrompt = `
 <h5>📦 مشخصات محصول:</h5>
 <ul>
   <li>برند: اگر مشخص است، نام برند؛ اگر مشخص نیست، این خط را کامل حذف کن و «نامشخص» ننویس.</li>
+  <li>مدل: اگر از نام، تصویر یا توضیح مشخص است، دقیقاً بیاور.</li>
   <li>نوع محصول: دسته‌بندی دقیق محصول</li>
-  <li>تعداد/وزن/حجم/مدل/رنگ/رایحه/طعم: فقط مواردی که از نام، تصویر یا توضیح مشخص است.</li>
+  <li>حجم/وزن/تعداد/رنگ/رایحه/طعم: فقط مواردی که از نام، تصویر یا توضیح مشخص است.</li>
+  <li>کشور مبدأ برند: اگر کاربر یا تصویر مشخص کرده، حتماً بیاور.</li>
+  <li>کشور سازنده: فقط اگر مشخص است و با کشور مبدأ برند فرق دارد.</li>
   <li>کاربرد: کاربرد اصلی محصول</li>
   <li>ویژگی شاخص: مهم‌ترین مزیت محصول</li>
 </ul>
@@ -510,7 +516,8 @@ function buildUserPrompt(
   }
 
   userPrompt += `\n- دسته خروجی: ${isNutsOrDriedFruit ? 'آجیل یا خشکبار' : 'محصول عمومی/غیرخشکبار'}`;
-  userPrompt += `\n\nوظیفه تو:\n1. نام محصول را اصلاح و کامل کن. correctedProductName باید بهترین نام فروشگاهی فارسی باشد، نه فقط تکرار نام خام کاربر.\n2. اگر محصول تعداد، وزن، حجم، مدل، برند، سری، رنگ، رایحه یا طعم دارد و از نام/عکس/توضیح مشخص است، آن را به نام و مشخصات اضافه کن.\n3. fullDescription را با قالب پایه بساز و بخش تکمیلی را فقط بر اساس نیاز و نوع همان محصول انتخاب کن؛ تیترهای نامناسب را برای همه محصولات تکرار نکن.\n4. متن باید مخصوص همین محصول باشد و کلی‌گویی بی‌ارزش نداشته باشد.\n5. اگر اطلاعاتی مطمئن نیست، آن را به صورت عدد/مدل قطعی ننویس.`;
+  userPrompt += `\n\nوظیفه تو:\n1. نام محصول را اصلاح و کامل کن. correctedProductName باید بهترین نام فروشگاهی فارسی باشد، نه فقط تکرار نام خام کاربر.\n2. اگر محصول تعداد، وزن، حجم، مدل، برند، سری، رنگ، رایحه یا طعم دارد و از نام/عکس/توضیح مشخص است، آن را به نام و مشخصات اضافه کن.\n3. fullDescription را با قالب پایه بساز و بخش تکمیلی را فقط بر اساس نیاز و نوع همان محصول انتخاب کن؛ تیترهای نامناسب را برای همه محصولات تکرار نکن.\n4. متن باید مخصوص همین محصول باشد و کلی‌گویی بی‌ارزش نداشته باشد.\n5. اگر اطلاعاتی مطمئن نیست، آن را به صورت عدد/مدل قطعی ننویس.
+6. اگر کاربر فیلدهایی مثل برند، مدل، حجم، کشور مبدأ برند، کشور سازنده یا نوع محصول داده، همان‌ها را در بخش 📦 مشخصات محصول حفظ کن و حذف نکن.`;
 
   if (productImage && imageAttachedForThisModel) {
     userPrompt += '\n\nتصویر محصول هم ارسال شده است. تصویر را دقیق بخوان: متن روی بسته‌بندی، لوگو، برند، تعداد، وزن/حجم، مدل، رنگ، رایحه/طعم، کاربرد و جزئیات ظاهری را استخراج کن و در نام اصلاح‌شده و مشخصات محصول لحاظ کن.';
@@ -635,6 +642,90 @@ function escapeHtmlText(value: string): string {
     .replace(/'/g, '&#039;');
 }
 
+type InputDetail = { label: string; value: string };
+
+function normalizeDetailValue(value: string): string {
+  return String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[؛;]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escapeRegExp(value: string): string {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractStructuredInputDetails(rawProductName: string, briefDescription: string): InputDetail[] {
+  const source = `${rawProductName || ''}\n${briefDescription || ''}`;
+  const details: InputDetail[] = [];
+  const seen = new Set<string>();
+
+  const patterns: Array<{ label: string; regex: RegExp }> = [
+    { label: 'برند', regex: /^\s*برند\s*[:：\-]\s*(.+)$/i },
+    { label: 'مدل', regex: /^\s*مدل\s*[:：\-]\s*(.+)$/i },
+    { label: 'حجم', regex: /^\s*حجم\s*[:：\-]\s*(.+)$/i },
+    { label: 'وزن', regex: /^\s*وزن\s*[:：\-]\s*(.+)$/i },
+    { label: 'تعداد', regex: /^\s*تعداد\s*[:：\-]\s*(.+)$/i },
+    { label: 'رنگ', regex: /^\s*رنگ\s*[:：\-]\s*(.+)$/i },
+    { label: 'رایحه', regex: /^\s*رایحه\s*[:：\-]\s*(.+)$/i },
+    { label: 'طعم', regex: /^\s*طعم\s*[:：\-]\s*(.+)$/i },
+    { label: 'نوع محصول', regex: /^\s*نوع\s*محصول\s*[:：\-]\s*(.+)$/i },
+    { label: 'کشور مبدأ برند', regex: /^\s*کشور\s*مب[ددا][أا]?\s*برند\s*[:：\-]\s*(.+)$/i },
+    { label: 'کشور مبدأ برند', regex: /^\s*مب[ددا][أا]?\s*برند\s*[:：\-]\s*(.+)$/i },
+    { label: 'کشور سازنده', regex: /^\s*کشور\s*(?:سازنده|تولید|ساخت)\s*[:：\-]\s*(.+)$/i },
+  ];
+
+  for (const rawLine of source.split(/\n|\r|\u2028|\u2029/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    for (const item of patterns) {
+      const match = line.match(item.regex);
+      if (!match) continue;
+      const value = normalizeDetailValue(match[1]);
+      if (!value) continue;
+      const key = `${item.label}:${value}`.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      details.push({ label: item.label, value });
+      break;
+    }
+  }
+
+  return details;
+}
+
+function ensureKnownDetailsInDescription(
+  html: string,
+  rawProductName: string,
+  briefDescription: string,
+): string {
+  const details = extractStructuredInputDetails(rawProductName, briefDescription);
+  if (details.length === 0) return html;
+
+  let output = String(html || '').trim();
+  if (!output) return output;
+
+  const missingDetails = details.filter((detail) => {
+    const labelPattern = escapeRegExp(detail.label);
+    const valuePattern = escapeRegExp(detail.value);
+    return !new RegExp(`${labelPattern}\\s*[:：]`, 'i').test(output) && !new RegExp(valuePattern, 'i').test(output);
+  });
+
+  if (missingDetails.length === 0) return output;
+
+  const detailItems = missingDetails
+    .map((detail) => `  <li>${escapeHtmlText(detail.label)}: ${escapeHtmlText(detail.value)}</li>`)
+    .join('\n');
+
+  const specsPattern = /(<h5>\s*📦\s*مشخصات محصول:\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i;
+  if (specsPattern.test(output)) {
+    return output.replace(specsPattern, (_match, open, body, close) => `${open}${body.trimEnd()}\n${detailItems}\n${close}`);
+  }
+
+  const fallbackSection = `\n<hr />\n<h5>📦 مشخصات محصول:</h5>\n<ul>\n${detailItems}\n</ul>\n<hr />`;
+  return `${output}${fallbackSection}`;
+}
 
 function getNaturalInlineLinkSentence(
   rawProductName: string,
@@ -1062,11 +1153,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           Boolean(isNutsOrDriedFruit),
           webSearchContext,
         );
-        const responseData: ProductData = ensureNaturalInlineInternalLink(
+        const linkedData: ProductData = ensureNaturalInlineInternalLink(
           generatedData,
           productName,
           Boolean(isNutsOrDriedFruit),
         );
+        const responseData: ProductData = {
+          ...linkedData,
+          fullDescription: ensureKnownDetailsInDescription(
+            linkedData.fullDescription,
+            productName,
+            briefDescription || '',
+          ),
+        };
 
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('X-Mohannad-Model', model.id);
