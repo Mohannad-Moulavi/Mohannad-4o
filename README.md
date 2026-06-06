@@ -75,6 +75,13 @@ MAX_OUTPUT_TOKENS=4800
 
 - Accurate web search for every product category, with DuckDuckGo + Bing fallback.
 - Search results are filtered by product identity tokens so unrelated results are not sent to the model.
-- Primary model is `google/gemini-2.5-flash` for better vision and product understanding; Flash Lite remains as fallback.
+- Primary model is `google/gemma-4-31b-it:free` so the project stays on free OpenRouter models while keeping image understanding and SEO generation.
 - If search cannot confirm a product, the app keeps the user's original product name instead of inventing another product.
 - Mohannad SEO HTML structure, Yoast fields, inline `<a href="#">...</a>` and origin/country fields are preserved.
+
+
+## Free-only model stack
+
+This build is configured to use only OpenRouter free models. Primary vision model: `google/gemma-4-31b-it:free`. Fallbacks: `openrouter/free`, `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`, `qwen/qwen3-next-80b-a3b-instruct:free`, `openai/gpt-oss-120b:free`, `meta-llama/llama-3.3-70b-instruct:free`, `z-ai/glm-4.5-air:free`.
+
+Note: free models are not unlimited. OpenRouter free-tier rate limits still apply.

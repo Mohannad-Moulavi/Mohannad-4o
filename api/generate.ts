@@ -32,22 +32,20 @@ const BING_SEARCH_URL = 'https://www.bing.com/search';
 const CURRENT_YEAR = new Date().getFullYear();
 const WEB_SEARCH_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TIMEOUT_MS || 10000);
 const WEB_SEARCH_TOTAL_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TOTAL_TIMEOUT_MS || 24000);
-const AI_MODEL_TIMEOUT_MS = Number(process.env.AI_MODEL_TIMEOUT_MS || 50000);
+const AI_MODEL_TIMEOUT_MS = Number(process.env.AI_MODEL_TIMEOUT_MS || 55000);
 
 const MODELS: OpenRouterModel[] = [
-  // Fast professional vision first. Gemini Flash-Lite is much faster for reading product images/labels.
-  // It is paid/very cheap on OpenRouter; if the account has no credit, the free fallbacks below will be tried.
-  { id: process.env.PRIMARY_VISION_MODEL || 'google/gemini-2.5-flash', vision: true },
-  { id: 'google/gemini-2.5-flash-lite', vision: true },
+  // Free-only primary stack. Best effort for image reading + SEO text without paid models.
+  // Gemma 4 31B IT Free is the main vision model because it is generally the strongest free multimodal option here.
+  { id: process.env.PRIMARY_VISION_MODEL || 'google/gemma-4-31b-it:free', vision: true },
 
-  // Free vision fallbacks. openrouter/free routes to an available free model matching image support when possible.
+  // Additional free multimodal fallbacks.
   { id: 'openrouter/free', vision: true },
-  { id: 'google/gemma-4-31b-it:free', vision: true },
   { id: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', vision: true },
 
-  // Strong text fallbacks. They preserve the SEO/product template if vision models are limited.
-  { id: 'openai/gpt-oss-120b:free', vision: false },
+  // Strong free text fallbacks to preserve the Mohannad SEO structure when the vision models are rate-limited.
   { id: 'qwen/qwen3-next-80b-a3b-instruct:free', vision: false },
+  { id: 'openai/gpt-oss-120b:free', vision: false },
   { id: 'meta-llama/llama-3.3-70b-instruct:free', vision: false },
   { id: 'z-ai/glm-4.5-air:free', vision: false },
 ];
