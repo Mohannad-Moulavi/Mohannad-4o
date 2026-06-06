@@ -29,9 +29,9 @@ type ChatContentPart =
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DUCKDUCKGO_HTML_URL = 'https://duckduckgo.com/html/';
 const CURRENT_YEAR = new Date().getFullYear();
-const WEB_SEARCH_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TIMEOUT_MS || 1200);
-const WEB_SEARCH_TOTAL_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TOTAL_TIMEOUT_MS || 2200);
-const AI_MODEL_TIMEOUT_MS = Number(process.env.AI_MODEL_TIMEOUT_MS || 22000);
+const WEB_SEARCH_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TIMEOUT_MS || 700);
+const WEB_SEARCH_TOTAL_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TOTAL_TIMEOUT_MS || 950);
+const AI_MODEL_TIMEOUT_MS = Number(process.env.AI_MODEL_TIMEOUT_MS || 16000);
 
 const MODELS: OpenRouterModel[] = [
   // Fast professional vision first. Gemini Flash-Lite is much faster for reading product images/labels.
@@ -458,42 +458,37 @@ function shouldSearchWeb(productName: string, briefDescription: string): boolean
 
 async function searchWebForProduct(productName: string, briefDescription: string, isNutsOrDriedFruit: boolean): Promise<string> {
   const normalizedName = productName.trim();
-  if (!normalizedName || isNutsOrDriedFruit) return '';
+  if (!normalizedName) return '';
 
-  // To keep the app fast and avoid unnecessary external calls, always search for modern/technical products;
-  // for normal products, search only when the name/description suggests recency-sensitive information.
-  if (!shouldSearchWeb(normalizedName, briefDescription)) return '';
-
-  const queries = [
-    `${normalizedName} مشخصات محصول ${CURRENT_YEAR}`,
-    `${normalizedName} official specs ${CURRENT_YEAR}`,
-  ];
-
+  // Fast-search mode: search is enabled for every product category, but only one lightweight query is used.
+  // This keeps product facts fresher without making the user wait for slow crawling.
+  const contextWords = String(briefDescription || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 90);
+  const query = `${normalizedName} ${contextWords} مشخصات ویژگی کشور مبدا برند`.trim();
   const collected: string[] = [];
 
-  for (const query of queries) {
-    try {
-      const url = `${DUCKDUCKGO_HTML_URL}?q=${encodeURIComponent(query)}&kl=wt-wt`;
-      const response = await fetchWithTimeout(url, {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; Mohannad4oBot/1.0; +https://mohannad-4o.vercel.app)',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-      }, WEB_SEARCH_TIMEOUT_MS);
+  try {
+    const url = `${DUCKDUCKGO_HTML_URL}?q=${encodeURIComponent(query)}&kl=wt-wt`;
+    const response = await fetchWithTimeout(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; Mohannad4oBot/1.0; +https://mohannad-4o.vercel.app)',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+    }, WEB_SEARCH_TIMEOUT_MS);
 
-      if (!response.ok) continue;
+    if (response.ok) {
       const html = await response.text();
       const results = extractDuckDuckGoResults(html);
       for (const result of results) {
         if (!collected.includes(result)) collected.push(result);
-        if (collected.length >= 6) break;
+        if (collected.length >= 3) break;
       }
-    } catch (error) {
-      console.warn(`Web search failed for query "${query}":`, error);
     }
-
-    if (collected.length >= 4) break;
+  } catch (error) {
+    console.warn(`Fast web search failed for query "${query}":`, error);
   }
 
   if (collected.length === 0) return '';
@@ -1028,14 +1023,10 @@ function validateProductData(data: ProductData, isNutsOrDriedFruit: boolean) {
     throw new Error(`AI response missed required template sections: ${missingSections.join(', ')}`);
   }
 
-  if (!isNutsOrDriedFruit) {
-    const headingMatches = description.match(/<h5>/g) || [];
-    if (headingMatches.length < 5) {
-      throw new Error('AI response did not include a product-specific extra section.');
-    }
-    if (description.includes('تیتر تکمیلی مناسب محصول')) {
-      throw new Error('AI response kept the placeholder extra-section heading.');
-    }
+  // Keep validation light for speed: base Mohannad SEO sections are required,
+  // but do not trigger expensive model fallbacks only because one optional extra section differs.
+  if (!isNutsOrDriedFruit && description.includes('تیتر تکمیلی مناسب محصول')) {
+    throw new Error('AI response kept the placeholder extra-section heading.');
   }
 }
 
@@ -1055,7 +1046,7 @@ async function requestOpenRouter(
     messages: buildMessages(model, productName, productImage, briefDescription, fullSystemInstruction, isNutsOrDriedFruit, webSearchContext),
     temperature: 0.35,
     top_p: 0.9,
-    max_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 4800),
+    max_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 3400),
   };
 
   if (useJsonMode) {
