@@ -55,3 +55,17 @@ APP_URL=https://your-vercel-domain.vercel.app
 
 Set `OPENROUTER_API_KEY` in Vercel Project Settings → Environment Variables.
 
+
+
+## Accurate Web Search Mode
+
+This build keeps web search enabled for all product categories and gives search up to 10 seconds by default. It is designed to avoid replacing the user's product with another product when search results are weak or unrelated.
+
+Recommended Vercel env values:
+
+```
+WEB_SEARCH_TIMEOUT_MS=10000
+WEB_SEARCH_TOTAL_TIMEOUT_MS=12000
+AI_MODEL_TIMEOUT_MS=36000
+MAX_OUTPUT_TOKENS=4800
+```
