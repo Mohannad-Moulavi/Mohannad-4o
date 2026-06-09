@@ -17,7 +17,7 @@ interface VercelResponse {
   end: (body?: string) => void;
 }
 
-type OpenRouterModel = {
+type GitHubModel = {
   id: string;
   vision: boolean;
 };
@@ -26,7 +26,7 @@ type ChatContentPart =
   | { type: 'text'; text: string }
   | { type: 'image_url'; image_url: { url: string } };
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const GITHUB_MODELS_API_URL = 'https://models.github.ai/inference/chat/completions';
 const DUCKDUCKGO_HTML_URL = 'https://duckduckgo.com/html/';
 const BING_SEARCH_URL = 'https://www.bing.com/search';
 const CURRENT_YEAR = new Date().getFullYear();
@@ -34,20 +34,10 @@ const WEB_SEARCH_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TIMEOUT_MS || 10000)
 const WEB_SEARCH_TOTAL_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TOTAL_TIMEOUT_MS || 24000);
 const AI_MODEL_TIMEOUT_MS = Number(process.env.AI_MODEL_TIMEOUT_MS || 55000);
 
-const MODELS: OpenRouterModel[] = [
-  // Free-only primary stack. Best effort for image reading + SEO text without paid models.
-  // Gemma 4 31B IT Free is the main vision model because it is generally the strongest free multimodal option here.
-  { id: process.env.PRIMARY_VISION_MODEL || 'google/gemma-4-31b-it:free', vision: true },
-
-  // Additional free multimodal fallbacks.
-  { id: 'openrouter/free', vision: true },
-  { id: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', vision: true },
-
-  // Strong free text fallbacks to preserve the Mohannad SEO structure when the vision models are rate-limited.
-  { id: 'qwen/qwen3-next-80b-a3b-instruct:free', vision: false },
-  { id: 'openai/gpt-oss-120b:free', vision: false },
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', vision: false },
-  { id: 'z-ai/glm-4.5-air:free', vision: false },
+const MODELS: GitHubModel[] = [
+  // GitHub Models / Azure OpenAI GPT-4o.
+  // Set GITHUB_MODEL in Vercel if GitHub's Code tab shows a different exact model id.
+  { id: process.env.GITHUB_MODEL || 'azure-openai/gpt-4o', vision: true },
 ];
 
 const advancedSeoAnalysisSchema = {
@@ -699,7 +689,7 @@ function buildUserPrompt(
 }
 
 function buildMessages(
-  model: OpenRouterModel,
+  model: GitHubModel,
   productName: string,
   productImage: ImageFile | null,
   briefDescription: string,
@@ -733,7 +723,7 @@ function buildMessages(
   ];
 }
 
-function getTextFromOpenRouterResponse(data: any): string {
+function getTextFromGitHubModelsResponse(data: any): string {
   const content = data?.choices?.[0]?.message?.content;
 
   if (typeof content === 'string') return content;
@@ -1219,8 +1209,8 @@ function validateProductData(data: ProductData, isNutsOrDriedFruit: boolean) {
   }
 }
 
-async function requestOpenRouter(
-  model: OpenRouterModel,
+async function requestGitHubModel(
+  model: GitHubModel,
   apiKey: string,
   productName: string,
   productImage: ImageFile | null,
@@ -1242,13 +1232,13 @@ async function requestOpenRouter(
     body.response_format = { type: 'json_object' };
   }
 
-  const response = await fetchWithTimeout(OPENROUTER_API_URL, {
+  const response = await fetchWithTimeout(GITHUB_MODELS_API_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
+      Accept: 'application/vnd.github+json',
       'Content-Type': 'application/json',
-      'HTTP-Referer': process.env.APP_URL || 'https://mohannad-4o.vercel.app',
-      'X-Title': 'Mohannad 4o',
+      'X-GitHub-Api-Version': '2022-11-28',
     },
     body: JSON.stringify(body),
   }, AI_MODEL_TIMEOUT_MS);
@@ -1256,15 +1246,15 @@ async function requestOpenRouter(
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const message = data?.error?.message || data?.message || response.statusText || 'OpenRouter request failed.';
+    const message = data?.error?.message || data?.message || response.statusText || 'GitHub Models request failed.';
     throw new Error(`${model.id}: ${message}`);
   }
 
   return data;
 }
 
-async function callOpenRouter(
-  model: OpenRouterModel,
+async function callGitHubModel(
+  model: GitHubModel,
   apiKey: string,
   productName: string,
   productImage: ImageFile | null,
@@ -1277,7 +1267,7 @@ async function callOpenRouter(
 
   for (const useJsonMode of [true, false]) {
     try {
-      const data = await requestOpenRouter(
+      const data = await requestGitHubModel(
         model,
         apiKey,
         productName,
@@ -1289,7 +1279,7 @@ async function callOpenRouter(
         webSearchContext,
       );
 
-      const text = getTextFromOpenRouterResponse(data);
+      const text = getTextFromGitHubModelsResponse(data);
       if (!text) {
         throw new Error(`${model.id}: empty response from AI model.`);
       }
@@ -1324,9 +1314,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ message: 'نام محصول الزامی است.' });
     }
 
-    const apiKey = process.env.OPENROUTER_API_KEY || process.env.API_KEY;
+    const apiKey = process.env.GITHUB_TOKEN || process.env.GITHUB_PAT || process.env.API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ message: 'OPENROUTER_API_KEY در تنظیمات Vercel تعریف نشده است.' });
+      return res.status(500).json({ message: 'GITHUB_TOKEN در تنظیمات Vercel تعریف نشده است.' });
     }
 
     const webSearchContext = await withFallbackTimeout(
@@ -1346,7 +1336,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     for (const model of uniqueModels) {
       try {
-        const generatedData = await callOpenRouter(
+        const generatedData = await callGitHubModel(
           model,
           apiKey,
           productName,
@@ -1381,7 +1371,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.status(502).json({
-      message: 'همه مدل‌های رایگان فعلاً خطا یا لیمیت دادند یا قالب خروجی را درست رعایت نکردند. چند دقیقه بعد دوباره تست کنید.',
+      message: 'مدل GitHub GPT-4o خطا یا لیمیت داد یا قالب خروجی را درست رعایت نکرد. چند دقیقه بعد دوباره تست کنید.',
       details: modelErrors.slice(-4),
     });
   } catch (error) {
