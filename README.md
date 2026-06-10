@@ -1,29 +1,41 @@
-# Mohannad 4o - GitHub Models GPT-4o
+# Mohannad 4o - GitHub Models Vision 100
 
-این نسخه OpenRouter را حذف کرده و API را به GitHub Models / Azure OpenAI GPT-4o وصل می‌کند.
-
-## Vercel Environment Variables
-
-در Vercel → Project Settings → Environment Variables اضافه کنید:
+این نسخه به GitHub Models وصل است و برای هدف «حداقل حدود 100 درخواست در روز» مدل اصلی را روی مدل کوچک‌تر و کم‌مصرف‌تر گذاشته است:
 
 ```env
-GITHUB_TOKEN=github_pat_your_token_here
-GITHUB_MODEL=azure-openai/gpt-4o
+GITHUB_MODEL=openai/gpt-4o-mini
+```
+
+## چرا GPT-4o mini؟
+
+- برای عکس محصول و متن سئو از مدل vision استفاده می‌کند.
+- نسبت به GPT-4o کامل، سهمیه روزانه بهتری می‌دهد اگر در GitHub Marketplace به عنوان Low tier نمایش داده شود.
+- GPT-4o کامل هنوز به عنوان fallback وجود دارد، اما مدل اصلی نیست.
+
+## Environment Variables در Vercel
+
+```env
+GITHUB_TOKEN=your_github_token
+GITHUB_MODEL=openai/gpt-4o-mini
 APP_URL=https://your-vercel-domain.vercel.app
+WEB_SEARCH_TIMEOUT_MS=10000
+WEB_SEARCH_TOTAL_TIMEOUT_MS=24000
+AI_MODEL_TIMEOUT_MS=55000
+MAX_OUTPUT_TOKENS=3600
 ```
 
-کلید GitHub را داخل فایل‌های پروژه نگذارید.
+اگر `openai/gpt-4o-mini` خطا داد، در Vercel مقدار مدل را از تب Code همان صفحه GitHub Models بردار. گزینه‌های جایگزین:
 
-## اجرای لوکال
-
-```bash
-npm install
-npm run dev
+```env
+GITHUB_MODEL=azure-openai/gpt-4o-mini
 ```
 
-## نکات
+یا برای کیفیت بالاتر ولی سهمیه کمتر:
 
-- endpoint استفاده‌شده: `https://models.github.ai/inference/chat/completions`
-- مدل پیش‌فرض: `azure-openai/gpt-4o`
-- اگر در صفحه GitHub Models تب Code مدل ID دیگری نشان داد، مقدار `GITHUB_MODEL` را همان قرار بدهید.
-- Web Search، خواندن عکس، ساختار Mohannad SEO، کشور مبدأ برند و خروجی Yoast حفظ شده‌اند.
+```env
+GITHUB_MODEL=openai/gpt-4o
+```
+
+## نکته امنیتی
+
+توکن GitHub را داخل فایل‌ها نگذار. فقط در Vercel Environment Variables ذخیره کن.
