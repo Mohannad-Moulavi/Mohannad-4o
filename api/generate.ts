@@ -76,7 +76,7 @@ const advancedSeoAnalysisSchema = {
       type: 'array',
       items: { type: 'string' },
       minItems: 8,
-      description: 'حداقل ۸ موجودیت معنایی کلیدی مانند برند، مدل، دسته‌بندی محصول، ویژگی‌های اصلی، تعداد، حجم، وزن، کشور مبدأ برند، کاربرد و مخاطب محصول.',
+      description: 'حداقل ۸ موجودیت معنایی کلیدی مانند برند، مدل، دسته‌بندی محصول، ویژگی‌های اصلی، تعداد، حجم، وزن،  کاربرد و مخاطب محصول.',
     },
     searchIntent: {
       type: 'string',
@@ -168,8 +168,8 @@ const systemInstruction = `
 2. زبان همه فیلدهای فارسی باید روان، فروشگاهی، طبیعی، یونیک و قابل انتشار باشد. از جمله‌های مصنوعی، تبلیغ اغراق‌آمیز، ترکیب‌های نامأنوس و وعده‌های غیرواقعی پرهیز کن. متن باید مثل توضیح محصول واقعی فروشگاه نوشته شود، نه متن ماشینی.
 3. نام خام محصول را اصلاح کن. اگر کاربر نام ناقص، غلط، انگلیسی/فارسی مخلوط یا بدون جزئیات داد، نام صحیح و کامل فروشگاهی بساز.
 3.1. اصلاح نام یعنی بهتر و کامل‌تر کردن همان محصول، نه تبدیل آن به محصول دیگر. اگر نام محصول نامفهوم یا سرچ ناقص بود، همان محصول خام را حفظ کن و فقط غلط املایی/ترجمه‌ای را اصلاح کن. هیچ‌وقت محصول دیگری را جایگزین نکن. حداقل یکی از کلمات هویتی نام خام محصول باید در correctedProductName و focusKeyword باقی بماند، مگر اینکه تصویر یا توضیح کاربر خلاف آن را صریحاً نشان دهد.
-4. اگر تصویر ارسال شده، متن روی تصویر، برند، تعداد، وزن، حجم، رنگ، رایحه، طعم، مدل، کشور سازنده/کشور مبدأ برند و ویژگی‌های روی بسته‌بندی را بخوان و در correctedProductName، مشخصات و متن لحاظ کن. اگر تصویر واضح است، اطلاعات روی تصویر از حدس ذهنی مهم‌تر است.
-4.1. هر اطلاعات قطعی که کاربر در نام یا توضیحات اولیه داده، مثل «برند»، «مدل»، «حجم»، «وزن»، «کشور مبدأ برند»، «کشور سازنده» و «نوع محصول»، باید بدون حذف و بدون تغییر معنی در fullDescription و مخصوصاً بخش «📦 مشخصات محصول» بیاید.
+4. اگر تصویر ارسال شده، متن روی تصویر، برند، تعداد، وزن، حجم، رنگ، رایحه، طعم، مدل، کشور سازنده و ویژگی‌های روی بسته‌بندی را بخوان و در correctedProductName، مشخصات و متن لحاظ کن. اگر تصویر واضح است، اطلاعات روی تصویر از حدس ذهنی مهم‌تر است.
+4.1. هر اطلاعات قطعی که کاربر در نام یا توضیحات اولیه داده، مثل «برند»، «مدل»، «حجم»، «وزن»،  «کشور سازنده» و «نوع محصول»، باید بدون حذف و بدون تغییر معنی در fullDescription و مخصوصاً بخش «📦 مشخصات محصول» بیاید.
 4.2. اگر کاربر نوشته «کشور مبدأ برند: کره جنوبی»، همین مفهوم را با برچسب «کشور مبدأ برند: کره جنوبی» بنویس؛ آن را به «کشور سازنده» تبدیل نکن، مگر خود ورودی چنین گفته باشد.
 5. اگر چیزی از تصویر یا توضیحات مشخص نیست، حدس خطرناک نزن؛ اما ویژگی‌های عمومی و رایج همان دسته محصول را طبیعی اضافه کن.
 6. ساختار پایه fullDescription را با الهام از قالب اصلی Mohannad SEO حفظ کن، اما بخش‌ها را پویا و متناسب با نوع همان محصول انتخاب کن. برای همه محصولات تیترهای نامناسب و تکراری مثل «چرا انتخاب هوشمندانه است» ننویس.
@@ -238,8 +238,8 @@ const nutsDescriptionPrompt = `
   <li>نوع محصول: بر اساس نام اصلاح‌شده</li>
   <li>فرآوری: بر اساس اطلاعات موجود</li>
   <li>وزن/بسته‌بندی/برند: اگر از تصویر یا توضیح مشخص است</li>
-  <li>کشور مبدأ برند: اگر از نام، تصویر، توضیح یا وب‌سرچ مشخص است، حتماً بیاور</li>
-  <li>کشور مبدأ/مبدأ تولید/کشور سازنده: فقط اگر مشخص است</li>
+  <li>کشور سازنده: فقط اگر قطعی و مشخص است بیاور</li>
+  <li>کشور سازنده: فقط اگر قطعی و مشخص است</li>
 </ul>
 <hr class="mohannad-divider">
 
@@ -303,8 +303,7 @@ const standardDescriptionPrompt = `
 <li>مدل: اگر مشخص است</li>
 <li>نوع محصول: دسته‌بندی دقیق محصول</li>
 <li>حجم/وزن/تعداد/رنگ/رایحه/طعم: فقط موارد قطعی</li>
-<li>کشور مبدأ برند: اگر مشخص است</li>
-<li>کشور مبدأ/کشور سازنده: فقط اگر مشخص است</li>
+<li>کشور سازنده: فقط اگر قطعی و مشخص است</li>
 <li>کاربرد: کاربرد اصلی محصول</li>
 </ul>
 <hr />
@@ -319,8 +318,8 @@ const standardDescriptionPrompt = `
 # قوانین مهم
 - متن باید طبیعی، فروشگاهی و قابل انتشار باشد.
 - جمله‌های تکراری، هوش مصنوعی، اغراق‌آمیز یا بی‌ربط ننویس.
-- اگر کاربر کشور مبدأ برند، مدل، حجم، برند یا نوع محصول داد، حتماً در مشخصات محصول حفظ کن.
-- کشور مبدأ برند را به کشور سازنده تبدیل نکن.
+- در بخش مشخصات محصول، کشور را فقط با برچسب «کشور سازنده» بنویس؛ اگر کشور سازنده قطعی نیست، هیچ خطی برای کشور ننویس.
+- «کشور مبدأ برند» را در خروجی مشخصات محصول ننویس و مقدار نامشخص/نامعلوم را هرگز نمایش نده.
 - از Markdown، جدول، h2 و h3 استفاده نکن.
 - فقط تگ‌های مجاز: <p>، <strong>، <h5>، <ul>، <li>، <a>، <hr />
 `;
@@ -665,7 +664,7 @@ function buildUserPrompt(
   userPrompt += `\n- دسته خروجی: ${isNutsOrDriedFruit ? 'آجیل یا خشکبار' : 'محصول عمومی/غیرخشکبار'}`;
   userPrompt += `\n\nوظیفه تو:\n1. نام محصول را اصلاح و کامل کن. correctedProductName باید بهترین نام فروشگاهی فارسی باشد، نه فقط تکرار نام خام کاربر.
 1.1. correctedProductName باید همان محصولی باشد که کاربر نوشته؛ اگر سرچ نتیجه نامرتبط آورد، به سرچ اعتماد نکن و محصول را عوض نکن. اگر کاربر نوشته «پنیر پوک»، نباید آن را به پنیر دیگری، خامه، نوشیدنی یا محصول ساختگی تبدیل کنی؛ فقط همان پنیر/برند/نام را با احتیاط اصلاح کن.\n2. اگر محصول تعداد، وزن، حجم، مدل، برند، سری، رنگ، رایحه یا طعم دارد و از نام/عکس/توضیح مشخص است، آن را به نام و مشخصات اضافه کن.\n3. fullDescription را با قالب پایه بساز و بخش تکمیلی را فقط بر اساس نیاز و نوع همان محصول انتخاب کن؛ تیترهای نامناسب را برای همه محصولات تکرار نکن.\n4. متن باید مخصوص همین محصول باشد و کلی‌گویی بی‌ارزش نداشته باشد.\n5. اگر اطلاعاتی مطمئن نیست، آن را به صورت عدد/مدل قطعی ننویس.
-6. اگر کاربر فیلدهایی مثل برند، مدل، حجم، کشور مبدأ برند، کشور مبدأ، کشور سازنده یا نوع محصول داده، همان‌ها را با همان برچسب در بخش 📦 مشخصات محصول حفظ کن و حذف نکن.`;
+6. اگر کاربر فیلدهایی مثل برند، مدل، حجم،  کشور مبدأ، کشور سازنده یا نوع محصول داده، همان‌ها را با همان برچسب در بخش 📦 مشخصات محصول حفظ کن و حذف نکن.`;
 
   if (productImage && imageAttachedForThisModel) {
     userPrompt += '\n\nتصویر محصول هم ارسال شده است. تصویر را دقیق بخوان: متن روی بسته‌بندی، لوگو، برند، تعداد، وزن/حجم، مدل، رنگ، رایحه/طعم، کاربرد و جزئیات ظاهری را استخراج کن و در نام اصلاح‌شده و مشخصات محصول لحاظ کن.';
@@ -1496,6 +1495,56 @@ function ensureMohannadFullDescriptionDepth(
   return { ...data, fullDescription: html };
 }
 
+
+function sanitizeCountryFieldsInDescription(html: string): string {
+  let output = String(html || '');
+
+  // Remove any list item with unknown / unspecified values.
+  output = output.replace(
+    /<li>\s*[^<:：]*[:：]\s*(?:نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
+    ''
+  );
+
+  // User preference: do not show "کشور مبدأ برند" in product specs; only "کشور سازنده" may appear.
+  output = output.replace(
+    /<li>\s*کشور\s*مب[ددا][أا]?\s*برند\s*[:：][\s\S]*?<\/li>/gi,
+    ''
+  );
+
+  // Remove generic origin country fields too, to avoid showing two different country labels.
+  output = output.replace(
+    /<li>\s*کشور\s*مب[ددا][أا]?\s*[:：][\s\S]*?<\/li>/gi,
+    ''
+  );
+
+  output = output.replace(
+    /<li>\s*مب[ددا][أا]?\s*تولید\s*[:：][\s\S]*?<\/li>/gi,
+    ''
+  );
+
+  // If country of manufacture is unknown, remove it too.
+  output = output.replace(
+    /<li>\s*کشور\s*سازنده\s*[:：]\s*(?:نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
+    ''
+  );
+
+  // Clean empty lists/spaces caused by removals.
+  output = output
+    .replace(/<ul>\s*<\/ul>/gi, '')
+    .replace(/\n{3,}/g, '\n')
+    .replace(/>\s+</g, '><')
+    .trim();
+
+  return output;
+}
+
+function sanitizeCountryFieldsInProductData(data: ProductData): ProductData {
+  return {
+    ...data,
+    fullDescription: sanitizeCountryFieldsInDescription(data.fullDescription),
+  };
+}
+
 function validateProductData(data: ProductData, isNutsOrDriedFruit: boolean) {
   const requiredFields: Array<keyof ProductData> = [
     'correctedProductName',
@@ -1623,12 +1672,12 @@ async function callGitHubModel(
       }
 
       const rawGeneratedData = restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName);
-      const generatedData = ensureMohannadFullDescriptionDepth(
+      const generatedData = sanitizeCountryFieldsInProductData(ensureMohannadFullDescriptionDepth(
         rawGeneratedData,
         productName,
         briefDescription,
         isNutsOrDriedFruit,
-      );
+      ));
       validateProductData(generatedData, isNutsOrDriedFruit);
       return generatedData;
     } catch (error) {
@@ -1695,14 +1744,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           productName,
           Boolean(isNutsOrDriedFruit),
         );
-        const responseData: ProductData = {
+        const responseData: ProductData = sanitizeCountryFieldsInProductData({
           ...linkedData,
           fullDescription: ensureKnownDetailsInDescription(
             linkedData.fullDescription,
             productName,
             briefDescription || '',
           ),
-        };
+        });
 
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('X-Mohannad-Model', model.id);
