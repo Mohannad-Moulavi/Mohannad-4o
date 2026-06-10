@@ -57,22 +57,26 @@ const advancedSeoAnalysisSchema = {
     keyphraseSynonyms: {
       type: 'array',
       items: { type: 'string' },
-      description: 'آرایه‌ای از حداقل ۳ عبارت کلیدی مترادف یا مرتبط.',
+      minItems: 8,
+      description: 'آرایه‌ای از حداقل ۸ عبارت کلیدی مترادف یا مرتبط. فقط کلمات کوتاه نده؛ عبارت‌های خرید، قیمت، برند، مدل و کاربرد محصول را هم اضافه کن.',
     },
     lsiKeywords: {
       type: 'array',
       items: { type: 'string' },
-      description: 'آرایه‌ای از کلیدواژه‌های معنایی مرتبط (LSI).',
+      minItems: 10,
+      description: 'آرایه‌ای از حداقل ۱۰ کلیدواژه معنایی مرتبط (LSI)، شامل دسته‌بندی، کاربرد، ویژگی‌ها، نیاز کاربر و عبارات رایج بازار.',
     },
     longTailKeywords: {
       type: 'array',
       items: { type: 'string' },
-      description: 'آرایه‌ای از ۲ تا ۳ عبارت کلیدی دم‌بلند و دقیق‌تر.',
+      minItems: 8,
+      description: 'آرایه‌ای از حداقل ۸ عبارت کلیدی دم‌بلند و دقیق‌تر؛ مثل خرید آنلاین، قیمت، بهترین، مناسب برای، محصول اصل و نام کامل محصول.',
     },
     semanticEntities: {
       type: 'array',
       items: { type: 'string' },
-      description: 'موجودیت‌های معنایی کلیدی مانند برند، دسته‌بندی محصول، ویژگی‌های اصلی، تعداد، حجم، وزن، مدل، کشور مبدأ برند یا کشور سازنده.',
+      minItems: 8,
+      description: 'حداقل ۸ موجودیت معنایی کلیدی مانند برند، مدل، دسته‌بندی محصول، ویژگی‌های اصلی، تعداد، حجم، وزن، کشور مبدأ برند، کاربرد و مخاطب محصول.',
     },
     searchIntent: {
       type: 'string',
@@ -81,7 +85,8 @@ const advancedSeoAnalysisSchema = {
     internalLinkingSuggestions: {
       type: 'array',
       items: { type: 'string' },
-      description: 'کلمات یا عبارات پیشنهادی برای لینک‌دهی داخلی به صفحات مرتبط.',
+      minItems: 5,
+      description: 'حداقل ۵ عبارت پیشنهادی برای لینک‌دهی داخلی به صفحات مرتبط و دسته‌بندی‌های دقیق.',
     },
   },
   required: [
@@ -247,107 +252,78 @@ const nutsDescriptionPrompt = `
 `;
 
 const standardDescriptionPrompt = `
-برای فیلد 'fullDescription'، یک متن کامل با فرمت HTML تولید کن که تمام ساختار و قوانین زیر را **دقیقاً مطابق سبک اصلی Mohannad SEO** برای محصولات غیر از آجیل و خشکبار رعایت کند. این قانون برای همه خروجی‌های سئو، توضیح کوتاه، توضیح کامل، عنوان و متا باید مبنا باشد: متن طبیعی، دقیق، قابل انتشار، بدون اغراق و مخصوص همان محصول باشد.
+برای فیلد fullDescription باید خروجی دقیقاً شبیه ساختار کامل Mohannad SEO باشد، نه خلاصه محصول.
 
-# 1. قوانین کلی محتوا (Yoast SEO)
-- **طول متن:** کل توضیحات کامل باید بین ۲۵۰ تا ۳۵۰ کلمه باشد.
-- **پاراگراف‌ها:** یک پاراگراف مقدمه طبیعی با طول ۳۰ تا ۴۰ کلمه بنویس. سایر پاراگراف‌ها بین ۴۰ تا ۶۰ کلمه باشند.
-- **خوانایی:** جملات کوتاه و روان باشند. از جمله‌های مصنوعی، ترجمه‌ای، اغراق‌آمیز و نامرتبط استفاده نکن.
-- **استفاده از کلیدواژه کانونی:** کلیدواژه باید در پاراگراف اول بیاید و طبیعی ۳ تا ۴ بار در کل متن تکرار شود.
-- **لینک‌سازی داخلی:** در متن کامل، دقیقاً یک عبارت مرتبط را با تگ \`<a href="#">عبارت مرتبط</a>\` لینک کن. جمله لینک‌دار باید طبیعی و منطقی باشد. لینک را به صورت باکس جدا یا راهنمای ویرایش ننویس.
-- **واقع‌گرایی:** هر جمله باید با کاربرد واقعی محصول جور باشد. مزایا، روش مصرف، ترکیبات، هشدارها و مشخصات را بر اساس نوع همان محصول بنویس.
+قانون حیاتی:
+اگر fullDescription کمتر از ۶ بخش h5، کمتر از ۱۲ آیتم li یا کمتر از ۲۲۰ کلمه باشد، خروجی نامعتبر است.
+هیچ‌وقت فقط «ویژگی‌ها، مزایا، مشخصات» ننویس و تمام نکن. برای محصولات آرایشی/بهداشتی مثل لوسیون، شامپو، کرم، سرم و ماسک مو باید حتماً بخش‌های روش استفاده، ترکیبات/فرمول، مناسب چه نوع پوست یا مو، نکات مهم و نگهداری را اضافه کنی.
 
-# 2. ساختار و فرمت متن (ساختار اصلی Mohannad SEO)
-- توضیحات باید با یک پاراگراف مقدمه بدون تیتر شروع شود:
-<p>مقدمه طبیعی، فروشگاهی و مخصوص محصول که نام محصول و کلیدواژه کانونی را دارد.</p>
-<hr />
+# طول و عمق محتوا
+- توضیحات کامل باید بین ۲۵۰ تا ۴۲۰ کلمه باشد.
+- پاراگراف اول ۳۰ تا ۵۰ کلمه باشد و نام محصول + کلیدواژه کانونی را طبیعی داشته باشد.
+- بخش «ویژگی‌های اصلی» حداقل ۵ آیتم li داشته باشد.
+- بخش «مشخصات محصول» حداقل ۵ آیتم li داشته باشد، مگر اطلاعات قطعی کمتر باشد؛ اما نوع محصول و کاربرد را حتماً بنویس.
+- حداقل ۶ تیتر h5 لازم است.
+- برای محصولات مراقبت پوست و مو حداقل ۷ تیتر h5 لازم است.
 
-- سپس بخش‌ها باید با \`<h5>\` همراه ایموجی باشند و بعد از هر بخش دقیقاً \`<hr />\` بیاید.
-- بخش‌ها باید **پویا و متناسب با نوع محصول** باشند؛ بخش نامرتبط را ننویس.
-- برای ویژگی‌ها و مشخصات از \`<ul>\` و \`<li>\` استفاده کن.
-- از Markdown، علامت ---، جدول، h2، h3 یا متن خارج از HTML استفاده نکن.
-
-# 3. بخش‌های پایه پیشنهادی
-برای بیشتر محصولات این بخش‌ها را با همین سبک بساز، اما بخش تکمیلی را متناسب با نوع محصول انتخاب کن:
-
-<p>مقدمه...</p>
+# ساختار اجباری برای محصولات عمومی
+<p>مقدمه طبیعی، فروشگاهی و مخصوص محصول؛ شامل نام محصول، کلیدواژه کانونی، کاربرد اصلی و حس واقعی خرید.</p>
 <hr />
 <h5>✅ ویژگی‌های اصلی:</h5>
 <ul>
-  <li>ویژگی واقعی و مخصوص محصول</li>
-  <li>ویژگی واقعی و مخصوص محصول</li>
+<li>ویژگی واقعی و مخصوص محصول</li>
+<li>ویژگی واقعی و مخصوص محصول</li>
+<li>ویژگی واقعی و مخصوص محصول</li>
+<li>ویژگی واقعی و مخصوص محصول</li>
+<li>ویژگی واقعی و مخصوص محصول</li>
 </ul>
 <hr />
 <h5>✨ مزایای استفاده:</h5>
-<p>مزایای واقعی و قابل اعتماد محصول برای خریدار.</p>
-<hr />
-<h5>بخش تکمیلی متناسب با محصول</h5>
-<p>یا لیست تخصصی لازم برای همان دسته محصول.</p>
-<hr />
-<h5>📦 مشخصات محصول:</h5>
-<ul>
-  <li>برند: اگر از نام، تصویر، توضیح یا وب‌سرچ مشخص است</li>
-  <li>مدل: اگر مشخص است</li>
-  <li>نوع محصول: دسته‌بندی دقیق محصول</li>
-  <li>حجم/وزن/تعداد/رنگ/رایحه/طعم: فقط موارد قطعی</li>
-  <li>کشور مبدأ برند: اگر کاربر، تصویر یا وب‌سرچ مشخص کرده، **حتماً** با همین برچسب بیاور</li>
-  <li>کشور مبدأ: اگر مبدأ محصول مشخص است ولی برند نیست، با همین برچسب بیاور</li>
-  <li>کشور سازنده: فقط اگر مشخص است و با کشور مبدأ برند فرق دارد</li>
-  <li>کاربرد: کاربرد اصلی محصول</li>
-</ul>
-<hr />
-
-# 4. راهنمای انتخاب بخش تکمیلی بر اساس نوع محصول
-- **غذا و نوشیدنی:** «🍽️ پیشنهاد مصرف:» | «🧊 روش نگهداری:» | «🌿 ترکیبات:»
-- **آرایشی و بهداشتی / مراقبت مو و پوست:** «📌 طریقه مصرف:» | «🌿 ترکیبات مؤثر:» | «🟢 نکات مهم:»
-- **شوینده و نظافت:** «🧴 راهنمای کاربردی استفاده:» | «⚠️ نکات ایمنی و نگهداری صحیح:»
-- **لوازم الکترونیکی:** «⚙️ مشخصات فنی:» | «🔌 راهنمای استفاده:» | «🛡️ نکات گارانتی و نگهداری:»
-- **اسباب‌بازی:** «👶 رده سنی:» | «⚠️ نکات ایمنی:» | «🎓 ارزش آموزشی:»
-- **پوشاک و اکسسوری:** «🧵 جنس و نگهداری:» | «📏 راهنمای سایز:» | «👕 نکات استایل:»
-- **کتاب و نوشت‌افزار:** «📚 مناسب چه کسانی است؟» | «✍️ کاربرد آموزشی:»
-
-# 5. قوانین مهم مشخصات محصول
-- اگر کاربر اطلاعات ساختاری داد، مثل:
-  برند: Elizavecca
-  مدل: CER-100 Collagen Ceramide Coating Protein Treatment
-  حجم: ۱۰۰ میلی‌لیتر
-  کشور مبدا برند: کره جنوبی
-  نوع محصول: ماسک پروتئین مو برای ترمیم و احیا
-  باید همه این موارد **بدون حذف** در بخش «📦 مشخصات محصول» بیایند.
-- اگر کاربر نوشته «کشور مبدا برند»، آن را به «کشور سازنده» تبدیل نکن. دقیقاً با برچسب «کشور مبدأ برند» بنویس.
-- اگر فقط «کشور مبدا» نوشته، با برچسب «کشور مبدأ» بنویس.
-- «نامشخص» ننویس؛ اگر اطلاعاتی مشخص نیست، آن خط را حذف کن.
-
-# 6. کنترل کیفیت متن
-- متن باید مثل توضیح واقعی فروشگاه باشد، نه متن ماشینی.
-- جمله‌های ممنوع: «تجربه‌ای نوین را کشف کنید»، «بهترین انتخاب برای همه»، «نتیجه تضمینی»، «بی‌نظیر و فوق‌العاده» مگر واقعاً طبیعی و کم‌اغراق باشد.
-- برای محصولات مراقبت مو/پوست، ادعای درمان قطعی ننویس؛ فقط درباره کمک به نرمی، مراقبت، رطوبت، ترمیم ظاهری یا استفاده صحیح بنویس.
-- برای خوراکی‌ها، پیشنهاد مصرف واقعی بده؛ جمله‌ای مثل «همراه با انواع قهوه استفاده کنید» ننویس مگر واقعاً محصول مکمل قهوه باشد.
-
-# 7. نمونه فرمت کلی، فقط برای الهام
-<p>با کرم دور چشم کلینیک آل ابوت آیز ریچ، رطوبت عمقی پوست حساس اطراف چشم را تامین کرده و ظاهر پف و تیرگی را کاهش دهید.</p>
-<hr />
-<h5>✅ ویژگی‌های اصلی:</h5>
-<ul>
-  <li>فرمولاسیون غنی برای آبرسانی</li>
-  <li>مناسب پوست حساس اطراف چشم</li>
-</ul>
-<hr />
-<h5>✨ مزایای استفاده:</h5>
-<p>این کرم به نرم‌تر شدن پوست اطراف چشم کمک می‌کند و برای استفاده روزانه گزینه‌ای کاربردی است.</p>
+<p>مزایا را در ۳ تا ۴ جمله کامل توضیح بده. فقط یک جمله کوتاه ننویس.</p>
 <hr />
 <h5>📌 طریقه مصرف:</h5>
-<p>صبح و شب مقدار کمی از محصول را با ضربات ملایم روی پوست اطراف چشم پخش کنید.</p>
+<p>روش استفاده واقعی محصول را مرحله‌ای اما در قالب متن روان توضیح بده.</p>
+<hr />
+<h5>🌿 ترکیبات یا فرمولاسیون:</h5>
+<p>اگر ترکیبات دقیق مشخص است همان را بگو. اگر مشخص نیست، فقط درباره نوع فرمول، بافت، رایحه یا کاربرد محصول بدون ادعای ساختگی توضیح بده.</p>
+<hr />
+<h5>🟢 مناسب چه کسانی است؟</h5>
+<p>برای چه نوع مصرف‌کننده، پوست، مو، سن، موقعیت یا نیاز روزانه مناسب است. ادعای درمان قطعی نکن.</p>
+<hr />
+<h5>🧊 روش نگهداری و نکات مهم:</h5>
+<ul>
+<li>روش نگهداری واقعی و منطقی</li>
+<li>نکته ایمنی یا احتیاط مصرف</li>
+<li>نکته کاربردی برای مصرف بهتر</li>
+</ul>
 <hr />
 <h5>📦 مشخصات محصول:</h5>
 <ul>
-  <li>برند: کلینیک</li>
-  <li>حجم: ۱۵ میلی‌لیتر</li>
-  <li>کشور مبدأ برند: آمریکا</li>
+<li>برند: اگر مشخص است</li>
+<li>مدل: اگر مشخص است</li>
+<li>نوع محصول: دسته‌بندی دقیق محصول</li>
+<li>حجم/وزن/تعداد/رنگ/رایحه/طعم: فقط موارد قطعی</li>
+<li>کشور مبدأ برند: اگر مشخص است</li>
+<li>کشور مبدأ/کشور سازنده: فقط اگر مشخص است</li>
+<li>کاربرد: کاربرد اصلی محصول</li>
 </ul>
 <hr />
-`;
 
+# انتخاب بخش‌ها بر اساس دسته
+- آرایشی/بهداشتی و مراقبت پوست/مو: حتماً «📌 طریقه مصرف»، «🌿 ترکیبات یا فرمولاسیون»، «🟢 مناسب چه کسانی است؟»، «🧊 روش نگهداری و نکات مهم» را بنویس.
+- غذا و نوشیدنی: «🍽️ پیشنهاد مصرف»، «🌿 ترکیبات»، «🧊 روش نگهداری»، «📦 مشخصات محصول» را بنویس.
+- شوینده: «🧴 راهنمای استفاده»، «⚠️ نکات ایمنی»، «🧊 روش نگهداری»، «📦 مشخصات محصول» را بنویس.
+- دیجیتال: «⚙️ مشخصات فنی»، «🔌 کاربرد و راهنمای استفاده»، «🛡️ نکات خرید و نگهداری»، «📦 مشخصات محصول» را بنویس.
+- پوشاک: «🧵 جنس و طراحی»، «📏 راهنمای سایز»، «🧺 روش شستشو و نگهداری»، «📦 مشخصات محصول» را بنویس.
+
+# قوانین مهم
+- متن باید طبیعی، فروشگاهی و قابل انتشار باشد.
+- جمله‌های تکراری، هوش مصنوعی، اغراق‌آمیز یا بی‌ربط ننویس.
+- اگر کاربر کشور مبدأ برند، مدل، حجم، برند یا نوع محصول داد، حتماً در مشخصات محصول حفظ کن.
+- کشور مبدأ برند را به کشور سازنده تبدیل نکن.
+- از Markdown، جدول، h2 و h3 استفاده نکن.
+- فقط تگ‌های مجاز: <p>، <strong>، <h5>، <ul>، <li>، <a>، <hr />
+`;
 const schemaInstruction = `
 خروجی JSON باید دقیقاً این کلیدها را داشته باشد:
 {
@@ -369,6 +345,13 @@ const schemaInstruction = `
     "internalLinkingSuggestions": ["string"]
   }
 }
+برای advancedSeoAnalysis کم ننویس. آرایه‌ها باید مفصل باشند:
+- keyphraseSynonyms حداقل ۸ مورد
+- lsiKeywords حداقل ۱۰ مورد
+- longTailKeywords حداقل ۸ مورد
+- semanticEntities حداقل ۸ مورد
+- internalLinkingSuggestions حداقل ۵ مورد
+بخش کلیدواژه‌ها باید در مجموع حداقل ۳۰ عبارت یکتا بدهد.
 هیچ کلید اضافه‌ای تولید نکن.
 `;
 
@@ -1154,8 +1137,147 @@ function restoreRawIdentityIfModelSwappedProduct(data: ProductData, rawProductNa
   };
 }
 
-function normalizeProductData(data: ProductData): ProductData {
+
+function uniqueSeoItems(items: Array<string | undefined | null>): string[] {
+  const seen = new Set<string>();
+  const output: string[] = [];
+  for (const raw of items) {
+    const item = String(raw || '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/^[،,\s]+|[،,\s]+$/g, '')
+      .trim();
+    if (!item || item.length < 2) continue;
+    const key = item.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push(item);
+  }
+  return output;
+}
+
+function enrichAdvancedSeoAnalysis(data: ProductData): ProductData {
+  const analysis = data.advancedSeoAnalysis || {
+    keyphraseSynonyms: [],
+    lsiKeywords: [],
+    longTailKeywords: [],
+    semanticEntities: [],
+    searchIntent: 'خرید محصول',
+    internalLinkingSuggestions: [],
+  };
+
+  const product = String(data.correctedProductName || '').trim();
+  const focus = String(data.focusKeyword || product).trim();
+  const english = String(data.englishProductName || '').trim();
+  const shortProduct = focus || product;
+  const firstToken = product.split(/\s+/).find((part) => part.length > 2) || '';
+
+  const baseKeywords = uniqueSeoItems([
+    product,
+    focus,
+    shortProduct,
+    english,
+    firstToken,
+    ...analysis.keyphraseSynonyms,
+    ...analysis.lsiKeywords,
+    ...analysis.longTailKeywords,
+    ...analysis.semanticEntities,
+    `خرید ${shortProduct}`,
+    `قیمت ${shortProduct}`,
+    `خرید آنلاین ${shortProduct}`,
+    `${shortProduct} اصل`,
+    `${shortProduct} فروشگاهی`,
+    `${shortProduct} با کیفیت`,
+    `${shortProduct} مناسب استفاده روزانه`,
+    `بهترین ${shortProduct}`,
+    `راهنمای خرید ${shortProduct}`,
+    `مشخصات ${shortProduct}`,
+    `کاربرد ${shortProduct}`,
+    `ویژگی‌های ${shortProduct}`,
+    `خرید اینترنتی ${shortProduct}`,
+    `قیمت روز ${shortProduct}`,
+    `${firstToken} ${shortProduct}`,
+  ]);
+
+  const keyphraseSynonyms = uniqueSeoItems([
+    ...analysis.keyphraseSynonyms,
+    product,
+    focus,
+    shortProduct,
+    `خرید ${shortProduct}`,
+    `قیمت ${shortProduct}`,
+    `${shortProduct} اصل`,
+    `${shortProduct} با کیفیت`,
+    `خرید آنلاین ${shortProduct}`,
+    ...baseKeywords,
+  ]).slice(0, 14);
+
+  const lsiKeywords = uniqueSeoItems([
+    ...analysis.lsiKeywords,
+    `ویژگی‌های ${shortProduct}`,
+    `مشخصات ${shortProduct}`,
+    `کاربرد ${shortProduct}`,
+    `راهنمای مصرف ${shortProduct}`,
+    `محصول مراقبتی`,
+    `محصول فروشگاهی`,
+    `انتخاب محصول مناسب`,
+    `خرید مطمئن محصول`,
+    `بررسی ${shortProduct}`,
+    ...baseKeywords,
+  ]).slice(0, 16);
+
+  const longTailKeywords = uniqueSeoItems([
+    ...analysis.longTailKeywords,
+    `خرید آنلاین ${shortProduct} با قیمت مناسب`,
+    `قیمت ${shortProduct} اصل در فروشگاه اینترنتی`,
+    `بهترین ${shortProduct} برای استفاده روزانه`,
+    `مشخصات و خرید ${shortProduct}`,
+    `راهنمای خرید ${shortProduct} اصل`,
+    `خرید اینترنتی ${shortProduct} با توضیحات کامل`,
+    `قیمت روز ${shortProduct} و مشخصات محصول`,
+    `خرید ${shortProduct} مناسب مصرف روزانه`,
+  ]).slice(0, 12);
+
+  const semanticEntities = uniqueSeoItems([
+    ...analysis.semanticEntities,
+    product,
+    focus,
+    english,
+    firstToken,
+    'برند محصول',
+    'دسته‌بندی محصول',
+    'مشخصات محصول',
+    'کاربرد محصول',
+    'خرید آنلاین',
+    'قیمت محصول',
+  ]).slice(0, 12);
+
+  const internalLinkingSuggestions = uniqueSeoItems([
+    ...analysis.internalLinkingSuggestions,
+    focus,
+    product,
+    `دسته‌بندی ${shortProduct}`,
+    `محصولات مرتبط با ${shortProduct}`,
+    `خرید ${shortProduct}`,
+    'دسته مادر مرتبط',
+    'صفحه برند محصول',
+  ]).slice(0, 8);
+
   return {
+    ...data,
+    advancedSeoAnalysis: {
+      keyphraseSynonyms,
+      lsiKeywords,
+      longTailKeywords,
+      semanticEntities,
+      searchIntent: analysis.searchIntent || 'خرید محصول؛ بررسی قیمت، مشخصات، کاربرد و انتخاب گزینه مناسب برای خرید اینترنتی.',
+      internalLinkingSuggestions,
+    },
+  };
+}
+
+function normalizeProductData(data: ProductData): ProductData {
+  const cleanedData: ProductData = {
     ...data,
     correctedProductName: String(data.correctedProductName || '').trim(),
     englishProductName: String(data.englishProductName || '').trim(),
@@ -1167,9 +1289,214 @@ function normalizeProductData(data: ProductData): ProductData {
     metaDescription: improvePersianNaturalness(String(data.metaDescription || '').replace(/<[^>]*>/g, '').trim()),
     altImageText: String(data.altImageText || '').replace(/<[^>]*>/g, '').trim(),
   };
+
+  return enrichAdvancedSeoAnalysis(cleanedData);
 }
 
-function validateProductData(data: ProductData, _isNutsOrDriedFruit: boolean) {
+
+function stripHtmlForWordCount(html: string): string {
+  return String(html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function countWordsInHtml(html: string): number {
+  const text = stripHtmlForWordCount(html);
+  if (!text) return 0;
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+function countMatches(input: string, pattern: RegExp): number {
+  return (String(input || '').match(pattern) || []).length;
+}
+
+function detectProductContentType(data: ProductData, rawProductName: string, briefDescription: string): 'beauty' | 'food' | 'detergent' | 'digital' | 'clothing' | 'general' {
+  const text = [
+    rawProductName,
+    briefDescription,
+    data.correctedProductName,
+    data.focusKeyword,
+    data.englishProductName,
+    ...(data.advancedSeoAnalysis?.semanticEntities || []),
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  if (/لوسیون|وازلین|gluta|hya|سرم|کرم|پوست|آبرسان|مرطوب|ضد\s*آفتاب|شامپو|ماسک\s*مو|نرم.?کننده\s*مو|آرایشی|بهداشتی|مو\b|hair|skin|lotion|serum|cream|vaseline/.test(text)) return 'beauty';
+  if (/شوینده|لباسشویی|ظرفشویی|پاک.?کننده|جرم.?گیر|مایع|پودر\s*لباس|detergent|cleaner/.test(text)) return 'detergent';
+  if (/برنج|روغن|چای|قهوه|نوشیدنی|شکلات|بیسکویت|خوراکی|غذایی|پنیر|لبنیات|food|coffee|tea/.test(text)) return 'food';
+  if (/موبایل|گوشی|آیفون|سامسونگ|شیائومی|لپ.?تاپ|تبلت|هدفون|شارژر|دیجیتال|iphone|samsung|xiaomi/.test(text)) return 'digital';
+  if (/لباس|پوشاک|کفش|کیف|شلوار|پیراهن|مانتو|clothing|shirt|shoe/.test(text)) return 'clothing';
+  return 'general';
+}
+
+function insertBeforeSpecsOrAppend(html: string, extraSections: string): string {
+  const cleanExtra = extraSections.trim();
+  if (!cleanExtra) return html;
+
+  const specsPattern = /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>)/i;
+  if (specsPattern.test(html)) {
+    return html.replace(specsPattern, `${cleanExtra}\n$1`);
+  }
+
+  return `${html.trim()}\n${cleanExtra}`;
+}
+
+function ensureMinimumFeatureItems(html: string, type: string): string {
+  const featureItemsByType: Record<string, string[]> = {
+    beauty: [
+      'فرمول مناسب برای استفاده روزانه و مراقبت منظم از پوست یا مو',
+      'کمک به حفظ رطوبت و نرمی در استفاده مداوم',
+      'بافت کاربردی و مناسب برای قرار گرفتن در روتین مراقبتی',
+      'قابل استفاده برای کاهش حس خشکی و زبری سطح پوست یا مو',
+      'انتخاب مناسب برای تکمیل محصولات مراقبت شخصی'
+    ],
+    food: [
+      'مناسب برای مصرف روزانه یا پذیرایی',
+      'قابل استفاده در ترکیب با وعده‌ها یا میان‌وعده‌های مختلف',
+      'بسته‌بندی کاربردی برای نگهداری بهتر محصول',
+      'انتخاب مناسب برای تکمیل سبد خرید خوراکی',
+      'کاربردی برای مصرف خانگی یا محل کار'
+    ],
+    detergent: [
+      'مناسب برای نظافت روزانه و استفاده خانگی',
+      'کمک به پاک‌کنندگی بهتر در کاربرد مشخص محصول',
+      'قابل استفاده طبق دستور مصرف روی بسته‌بندی',
+      'بسته‌بندی کاربردی برای استفاده آسان‌تر',
+      'مناسب برای تکمیل محصولات شوینده و نظافت منزل'
+    ],
+    general: [
+      'طراحی کاربردی متناسب با مصرف روزانه',
+      'کیفیت مناسب برای استفاده خانگی یا فروشگاهی',
+      'قابل استفاده برای نیازهای رایج خریداران',
+      'انتخابی مناسب برای تکمیل سبد خرید',
+      'دارای مشخصات کاربردی متناسب با نوع محصول'
+    ],
+  };
+
+  const extras = featureItemsByType[type] || featureItemsByType.general;
+
+  return html.replace(/(<h5>\s*✅\s*ویژگی‌های\s*اصلی\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i, (_match, open, body, close) => {
+    const existingCount = countMatches(body, /<li\b/gi);
+    if (existingCount >= 5) return `${open}${body}${close}`;
+
+    const missing = extras.slice(0, 5 - existingCount)
+      .map((item) => `<li>${escapeHtmlText(item)}</li>`)
+      .join('');
+    return `${open}${String(body).trim()}${missing}${close}`;
+  });
+}
+
+function ensureMohannadFullDescriptionDepth(
+  data: ProductData,
+  rawProductName: string,
+  briefDescription: string,
+  isNutsOrDriedFruit: boolean,
+): ProductData {
+  if (isNutsOrDriedFruit) return data;
+
+  let html = String(data.fullDescription || '').trim();
+  if (!html) return data;
+
+  const type = detectProductContentType(data, rawProductName, briefDescription);
+  html = ensureMinimumFeatureItems(html, type);
+
+  const h5Count = countMatches(html, /<h5\b/gi);
+  const liCount = countMatches(html, /<li\b/gi);
+  const wordCount = countWordsInHtml(html);
+
+  if (h5Count >= 6 && liCount >= 12 && wordCount >= 210) {
+    return { ...data, fullDescription: html };
+  }
+
+  const focus = escapeHtmlText(data.focusKeyword || data.correctedProductName || rawProductName || 'این محصول');
+  const name = escapeHtmlText(data.correctedProductName || rawProductName || data.focusKeyword || 'این محصول');
+
+  const sections: string[] = [];
+
+  if (type === 'beauty') {
+    if (!/طریقه\s*مصرف|روش\s*استفاده/i.test(html)) {
+      sections.push(`<h5>📌 طریقه مصرف:</h5>
+<p>برای استفاده بهتر از ${name}، مقدار مناسبی از محصول را روی پوست تمیز یا ناحیه مورد نظر پخش کنید و با حرکت ملایم ماساژ دهید تا جذب شود. اگر محصول برای بدن است، استفاده پس از حمام یا زمانی که پوست کمی رطوبت دارد می‌تواند حس نرمی و لطافت بیشتری ایجاد کند.</p>
+<hr />`);
+    }
+    if (!/ترکیبات|فرمولاسیون|فرمول/i.test(html)) {
+      sections.push(`<h5>🌿 ترکیبات یا فرمولاسیون:</h5>
+<p>${focus} با تمرکز بر رطوبت‌رسانی، نرمی و مراقبت روزانه طراحی می‌شود. اگر ترکیباتی مانند هیالورونیک اسید، گلیسیرین، ویتامین‌ها یا مواد نرم‌کننده روی بسته‌بندی محصول درج شده باشد، این مواد می‌توانند به کاهش حس خشکی و بهبود لطافت سطح پوست کمک کنند.</p>
+<hr />`);
+    }
+    if (!/مناسب\s*چه\s*کسانی|مناسب\s*برای|چه\s*نوع\s*پوست|چه\s*نوع\s*مو/i.test(html)) {
+      sections.push(`<h5>🟢 مناسب چه کسانی است؟</h5>
+<p>این محصول برای افرادی مناسب است که به دنبال یک گزینه روزانه برای مراقبت، نرمی و آبرسانی بهتر هستند. برای پوست‌های خیلی حساس یا دارای التهاب، بهتر است ابتدا مقدار کمی از محصول روی بخش کوچکی از پوست تست شود و سپس استفاده منظم انجام گیرد.</p>
+<hr />`);
+    }
+    if (!/نگهداری|نکات\s*مهم|احتیاط/i.test(html)) {
+      sections.push(`<h5>🧊 روش نگهداری و نکات مهم:</h5>
+<ul>
+<li>محصول را در جای خشک و خنک و دور از نور مستقیم آفتاب نگهداری کنید.</li>
+<li>از تماس مستقیم محصول با چشم، زخم باز یا پوست تحریک‌شده خودداری شود.</li>
+<li>برای نتیجه بهتر، استفاده منظم و متناسب با دستور مصرف روی بسته‌بندی توصیه می‌شود.</li>
+</ul>
+<hr />`);
+    }
+  } else if (type === 'food') {
+    if (!/پیشنهاد\s*مصرف/i.test(html)) {
+      sections.push(`<h5>🍽️ پیشنهاد مصرف:</h5>
+<p>${name} را می‌توان متناسب با نوع محصول در وعده‌های روزانه، میان‌وعده، پذیرایی یا کنار نوشیدنی و غذا استفاده کرد. برای حفظ کیفیت، مقدار مورد نیاز را درست پیش از مصرف آماده کنید و باقی‌مانده محصول را در شرایط مناسب نگهداری کنید.</p>
+<hr />`);
+    }
+    if (!/ترکیبات/i.test(html)) {
+      sections.push(`<h5>🌿 ترکیبات:</h5>
+<p>ترکیبات دقیق باید بر اساس اطلاعات درج‌شده روی بسته‌بندی بررسی شود. اگر ترکیبات کامل در دسترس نیست، بهتر است در صفحه محصول از درج مواد تشکیل‌دهنده حدسی خودداری شود و فقط ویژگی‌های قطعی محصول نوشته شود.</p>
+<hr />`);
+    }
+    if (!/نگهداری/i.test(html)) {
+      sections.push(`<h5>🧊 روش نگهداری:</h5>
+<ul>
+<li>در جای خشک، خنک و دور از نور مستقیم نگهداری شود.</li>
+<li>پس از باز شدن بسته‌بندی، درب آن را کاملاً ببندید.</li>
+<li>از قرار دادن محصول در معرض رطوبت، گرمای زیاد یا آلودگی محیطی خودداری کنید.</li>
+</ul>
+<hr />`);
+    }
+  } else if (type === 'detergent') {
+    sections.push(`<h5>🧴 راهنمای کاربردی استفاده:</h5>
+<p>${name} را طبق دستور مصرف درج‌شده روی بسته‌بندی و متناسب با سطح یا نوع استفاده به کار ببرید. مصرف بیش از مقدار لازم معمولاً نتیجه بهتری ایجاد نمی‌کند و بهتر است مقدار استفاده با نوع آلودگی و کاربرد محصول هماهنگ باشد.</p>
+<hr />
+<h5>⚠️ نکات ایمنی و نگهداری صحیح:</h5>
+<ul>
+<li>دور از دسترس کودکان نگهداری شود.</li>
+<li>از تماس مستقیم با چشم و پوست حساس خودداری کنید.</li>
+<li>در جای خشک، خنک و دور از تابش مستقیم آفتاب قرار گیرد.</li>
+</ul>
+<hr />`);
+  } else {
+    if (!/روش\s*استفاده|راهنمای\s*استفاده|پیشنهاد\s*مصرف/i.test(html)) {
+      sections.push(`<h5>📌 راهنمای استفاده:</h5>
+<p>${name} را متناسب با کاربرد اصلی محصول و طبق اطلاعات درج‌شده روی بسته‌بندی استفاده کنید. پیش از خرید، توجه به نوع محصول، حجم، مدل، برند و نیاز مصرفی کمک می‌کند انتخاب دقیق‌تری داشته باشید.</p>
+<hr />`);
+    }
+    if (!/نگهداری|نکات\s*مهم/i.test(html)) {
+      sections.push(`<h5>🧊 نکات نگهداری و استفاده بهتر:</h5>
+<ul>
+<li>محصول را در شرایط مناسب و دور از آسیب، رطوبت یا گرمای غیرضروری نگهداری کنید.</li>
+<li>پیش از استفاده، توضیحات و هشدارهای درج‌شده روی بسته‌بندی را بررسی کنید.</li>
+<li>برای انتخاب بهتر، مشخصات محصول را با نیاز مصرفی خود مقایسه کنید.</li>
+</ul>
+<hr />`);
+    }
+  }
+
+  if (sections.length > 0) {
+    html = insertBeforeSpecsOrAppend(html, sections.join('\n'));
+  }
+
+  return { ...data, fullDescription: html };
+}
+
+function validateProductData(data: ProductData, isNutsOrDriedFruit: boolean) {
   const requiredFields: Array<keyof ProductData> = [
     'correctedProductName',
     'englishProductName',
@@ -1194,11 +1521,27 @@ function validateProductData(data: ProductData, _isNutsOrDriedFruit: boolean) {
     throw new Error('AI response has invalid advancedSeoAnalysis.');
   }
 
-  // GitHub Models may produce slightly different section wording. Do not reject a valid JSON response
-  // only because one optional Mohannad SEO section title differs; post-processing keeps the output usable.
   const description = String(data.fullDescription || '');
-  if (!description.includes('<p>') || !description.includes('<hr')) {
-    throw new Error('AI response did not preserve a basic HTML product description template.');
+  if (!description.includes('<p>') || !description.includes('<h5>') || !description.includes('<hr')) {
+    throw new Error('AI response did not preserve the Mohannad SEO HTML product description template.');
+  }
+
+  if (!isNutsOrDriedFruit) {
+    const h5Count = countMatches(description, /<h5\b/gi);
+    const liCount = countMatches(description, /<li\b/gi);
+    const wordCount = countWordsInHtml(description);
+
+    if (h5Count < 5) {
+      throw new Error(`AI response fullDescription is too short: only ${h5Count} h5 sections.`);
+    }
+
+    if (liCount < 9) {
+      throw new Error(`AI response fullDescription is too thin: only ${liCount} list items.`);
+    }
+
+    if (wordCount < 170) {
+      throw new Error(`AI response fullDescription is too short: only ${wordCount} words.`);
+    }
   }
 }
 
@@ -1279,7 +1622,13 @@ async function callGitHubModel(
         throw new Error(`${model.id}: empty response from AI model.`);
       }
 
-      const generatedData = restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName);
+      const rawGeneratedData = restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName);
+      const generatedData = ensureMohannadFullDescriptionDepth(
+        rawGeneratedData,
+        productName,
+        briefDescription,
+        isNutsOrDriedFruit,
+      );
       validateProductData(generatedData, isNutsOrDriedFruit);
       return generatedData;
     } catch (error) {

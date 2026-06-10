@@ -199,36 +199,61 @@ const AdvancedSeoTabs: React.FC<{ analysis: ProductData['advancedSeoAnalysis'] }
     const tabs = {
         keywords: 'کلیدواژه‌ها',
         intent: 'هدف جستجو',
+        links: 'لینک داخلی',
     };
+
+    const uniqueItems = (items: string[]) => Array.from(new Set((items || []).filter(Boolean).map(item => item.trim()).filter(Boolean)));
+    const allKeywords = uniqueItems([
+        ...(analysis.keyphraseSynonyms || []),
+        ...(analysis.lsiKeywords || []),
+        ...(analysis.longTailKeywords || []),
+        ...(analysis.semanticEntities || []),
+    ]);
+
+    const KeywordGroup: React.FC<{title: string, items: string[]}> = ({ title, items }) => (
+        <div className="mb-3">
+            <h4 className="font-semibold text-gray-400 mb-1">{title}</h4>
+            <p className="text-gray-200 bg-gray-700/50 p-3 rounded-md leading-relaxed whitespace-pre-wrap">
+                {uniqueItems(items).join('، ')}
+            </p>
+        </div>
+    );
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'keywords': {
-                const allKeywords = [
-                    ...(analysis.keyphraseSynonyms || []),
-                    ...(analysis.lsiKeywords || []),
-                    ...(analysis.longTailKeywords || []),
-                    ...(analysis.semanticEntities || []),
-                ].filter(Boolean);
-
+            case 'keywords':
                 return (
-                     <div>
-                        <h4 className="font-semibold text-gray-400 mb-2">کلیدواژه های مرتبط</h4>
+                    <div>
+                        <h4 className="font-semibold text-gray-400 mb-2">کلیدواژه‌های مرتبط کامل</h4>
                         {allKeywords.length > 0 ? (
-                            <p className="text-gray-200 bg-gray-700/50 p-3 rounded-md leading-relaxed">
-                                {allKeywords.join('، ')}
-                            </p>
+                            <>
+                                <p className="text-gray-200 bg-gray-700/50 p-3 rounded-md leading-relaxed whitespace-pre-wrap mb-4">
+                                    {allKeywords.join('، ')}
+                                </p>
+                                <KeywordGroup title="کلیدواژه‌های مترادف" items={analysis.keyphraseSynonyms || []} />
+                                <KeywordGroup title="کلیدواژه‌های LSI / معنایی" items={analysis.lsiKeywords || []} />
+                                <KeywordGroup title="عبارت‌های دم‌بلند" items={analysis.longTailKeywords || []} />
+                                <KeywordGroup title="موجودیت‌های معنایی" items={analysis.semanticEntities || []} />
+                            </>
                         ) : (
                             <p className="text-gray-500 text-xs italic">موردی یافت نشد.</p>
                         )}
                     </div>
                 );
-            }
             case 'intent':
                 return (
                     <div>
                         <h4 className="font-semibold text-gray-400">Search Intent (هدف جستجو)</h4>
-                        <p className="text-gray-200 bg-gray-700/50 px-2 py-1 rounded inline-block mt-1">{analysis.searchIntent}</p>
+                        <p className="text-gray-200 bg-gray-700/50 p-3 rounded-md mt-1 leading-relaxed">{analysis.searchIntent}</p>
+                    </div>
+                );
+            case 'links':
+                return (
+                    <div>
+                        <h4 className="font-semibold text-gray-400 mb-2">پیشنهادهای لینک‌سازی داخلی</h4>
+                        <p className="text-gray-200 bg-gray-700/50 p-3 rounded-md leading-relaxed whitespace-pre-wrap">
+                            {(analysis.internalLinkingSuggestions || []).join('، ')}
+                        </p>
                     </div>
                 );
             default:
@@ -238,12 +263,12 @@ const AdvancedSeoTabs: React.FC<{ analysis: ProductData['advancedSeoAnalysis'] }
 
     return (
         <div>
-            <div className="flex border-b border-gray-700 mb-3">
+            <div className="flex border-b border-gray-700 mb-3 overflow-x-auto">
                 {Object.entries(tabs).map(([key, title]) => (
                     <button
                         key={key}
                         onClick={() => setActiveTab(key)}
-                        className={`-mb-px px-4 py-2 text-sm font-medium transition-colors focus:outline-none ${
+                        className={`-mb-px px-4 py-2 text-sm font-medium transition-colors focus:outline-none whitespace-nowrap ${
                             activeTab === key
                                 ? 'border-b-2 border-blue-400 text-white'
                                 : 'border-b-2 border-transparent text-gray-400 hover:text-white hover:border-gray-500'
@@ -254,7 +279,6 @@ const AdvancedSeoTabs: React.FC<{ analysis: ProductData['advancedSeoAnalysis'] }
                     </button>
                 ))}
             </div>
-            {/* The key attribute forces React to re-mount the component, triggering the animation */}
             <div key={activeTab} className="pt-2 text-sm animate-fade-in-fast">
                 {renderContent()}
             </div>
@@ -416,14 +440,21 @@ function App() {
                         label="Advanced SEO Analysis (تجزیه و تحلیل سئو برتر)"
                         content={<AdvancedSeoTabs analysis={generatedContent.advancedSeoAnalysis} />}
                         copyText={
-                           `Keywords: ${[
+                           `کلیدواژه‌ها:
+${[
                                 ...(generatedContent.advancedSeoAnalysis.keyphraseSynonyms || []),
                                 ...(generatedContent.advancedSeoAnalysis.lsiKeywords || []),
                                 ...(generatedContent.advancedSeoAnalysis.longTailKeywords || []),
                                 ...(generatedContent.advancedSeoAnalysis.semanticEntities || []),
-                            ].filter(Boolean).join(', ')}\n` +
-                            `Search Intent: ${generatedContent.advancedSeoAnalysis.searchIntent}\n` +
-                            `Internal Linking Suggestions: ${generatedContent.advancedSeoAnalysis.internalLinkingSuggestions.join(', ')}`
+                            ].filter(Boolean).join('، ')}
+
+` +
+                            `هدف جستجو:
+${generatedContent.advancedSeoAnalysis.searchIntent}
+
+` +
+                            `لینک‌سازی داخلی:
+${generatedContent.advancedSeoAnalysis.internalLinkingSuggestions.join('، ')}`
                         }
                     />
                 </div>
