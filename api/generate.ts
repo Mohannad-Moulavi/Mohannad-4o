@@ -238,8 +238,8 @@ const nutsDescriptionPrompt = `
   <li>نوع محصول: بر اساس نام اصلاح‌شده</li>
   <li>فرآوری: بر اساس اطلاعات موجود</li>
   <li>وزن/بسته‌بندی/برند: اگر از تصویر یا توضیح مشخص است</li>
-  <li>کشور سازنده: فقط اگر قطعی و مشخص است بیاور</li>
-  <li>کشور سازنده: فقط اگر قطعی و مشخص است</li>
+  <li>کشور سازنده: اگر کشور واقعی مشخص است همان کشور را بنویس؛ اگر مشخص نیست دقیقاً بنویس «بستگی به سری ساخت دارد»</li>
+  <li>کشور سازنده: اگر کشور واقعی مشخص است همان کشور را بنویس؛ اگر مشخص نیست دقیقاً بنویس «بستگی به سری ساخت دارد»</li>
 </ul>
 <hr class="mohannad-divider">
 
@@ -252,7 +252,7 @@ const nutsDescriptionPrompt = `
 `;
 
 const standardDescriptionPrompt = `
-برای فیلد fullDescription باید خروجی دقیقاً شبیه ساختار کامل Mohannad SEO باشد، نه خلاصه محصول.
+برای فیلد fullDescription باید خروجی دقیقاً شبیه ساختار کامل Mohannad SEO باشد، نه خلاصه محصول. همچنین shortDescription، seoTitle، focusKeyword، metaDescription و altImageText باید دقیقاً بر اساس قوانین Yoast SEO تولید شوند.
 
 قانون حیاتی:
 اگر fullDescription کمتر از ۶ بخش h5، کمتر از ۱۲ آیتم li یا کمتر از ۲۲۰ کلمه باشد، خروجی نامعتبر است.
@@ -303,7 +303,7 @@ const standardDescriptionPrompt = `
 <li>مدل: اگر مشخص است</li>
 <li>نوع محصول: دسته‌بندی دقیق محصول</li>
 <li>حجم/وزن/تعداد/رنگ/رایحه/طعم: فقط موارد قطعی</li>
-<li>کشور سازنده: فقط اگر قطعی و مشخص است</li>
+<li>کشور سازنده: اگر کشور واقعی مشخص است همان کشور را بنویس؛ اگر مشخص نیست دقیقاً بنویس «بستگی به سری ساخت دارد»</li>
 <li>کاربرد: کاربرد اصلی محصول</li>
 </ul>
 <hr />
@@ -318,8 +318,8 @@ const standardDescriptionPrompt = `
 # قوانین مهم
 - متن باید طبیعی، فروشگاهی و قابل انتشار باشد.
 - جمله‌های تکراری، هوش مصنوعی، اغراق‌آمیز یا بی‌ربط ننویس.
-- در بخش مشخصات محصول، کشور را فقط با برچسب «کشور سازنده» بنویس؛ اگر کشور سازنده قطعی نیست، هیچ خطی برای کشور ننویس.
-- «کشور مبدأ برند» را در خروجی مشخصات محصول ننویس و مقدار نامشخص/نامعلوم را هرگز نمایش نده.
+- در بخش مشخصات محصول، کشور را فقط با برچسب «کشور سازنده» بنویس. اگر کشور واقعی مشخص است، همان کشور را بنویس؛ اگر مشخص نیست، دقیقاً بنویس: «کشور سازنده: بستگی به سری ساخت دارد».
+- «کشور مبدأ برند» را در خروجی مشخصات محصول ننویس. عبارت‌های «اگر مشخص است»، «نامشخص»، «نامعلوم» یا متن دستورالعمل را هرگز داخل خروجی نیاور.
 - از Markdown، جدول، h2 و h3 استفاده نکن.
 - فقط تگ‌های مجاز: <p>، <strong>، <h5>، <ul>، <li>، <a>، <hr />
 `;
@@ -352,6 +352,14 @@ UI فقط یک خروجی نشان می‌دهد: «کلیدواژه‌های م
 عبارت‌ها باید طبیعی، فروشگاهی و مرتبط باشند؛ موارد بی‌ربط مثل «محصول مراقبتی» برای خوراکی‌ها ننویس.
 internalLinkingSuggestions و searchIntent را فقط برای سازگاری JSON پر کن، اما در UI نمایش داده نمی‌شوند.
 هیچ کلید اضافه‌ای تولید نکن.
+
+قوانین اجباری Yoast SEO برای فیلدهای اصلی:
+- focusKeyword باید عبارت اصلی محصول باشد؛ کوتاه، طبیعی و قابل جستجو. آن را در پاراگراف اول fullDescription، عنوان سئو، متا و متن جایگزین تصویر بیاور.
+- seoTitle باید طبیعی، فروشگاهی، شامل focusKeyword و حدود ۴۵ تا ۶۵ کاراکتر باشد.
+- metaDescription باید شامل focusKeyword، دعوت به خرید/بررسی و حدود ۱۲۰ تا ۱۵۵ کاراکتر باشد.
+- shortDescription باید یک متن کوتاه فروشگاهی، طبیعی و مخصوص همان محصول باشد؛ نه جمله عمومی و نه کپی از متا.
+- altImageText باید شامل نام محصول/focusKeyword باشد و برای تصویر محصول مناسب باشد.
+- هیچ‌کدام از این فیلدها نباید با متن‌های عمومی مثل «محصول با کیفیت»، «محصول مراقبتی» یا جمله‌های مصنوعی پر شوند.
 `;
 
 
@@ -1443,6 +1451,158 @@ function enrichAdvancedSeoAnalysis(data: ProductData): ProductData {
   };
 }
 
+
+function normalizePlainText(input: string): string {
+  return improvePersianNaturalness(String(input || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim());
+}
+
+function truncateAtWord(input: string, maxLength: number): string {
+  const text = normalizePlainText(input);
+  if (text.length <= maxLength) return text;
+  const cut = text.slice(0, maxLength + 1);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 40 ? cut.slice(0, lastSpace) : cut.slice(0, maxLength)).trim().replace(/[،,.؛:]+$/g, '');
+}
+
+function makeSentence(input: string): string {
+  const text = normalizePlainText(input).replace(/[.]+$/g, '').trim();
+  return text ? `${text}.` : '';
+}
+
+function getPrimaryProductPhrase(data: ProductData): string {
+  const candidate = normalizePlainText(data.focusKeyword || data.correctedProductName || data.englishProductName);
+  if (!candidate) return 'محصول';
+  // Keep full branded phrase if it is reasonable; otherwise shorten safely.
+  const words = candidate.split(/\s+/).filter(Boolean);
+  if (words.length <= 7) return candidate;
+  return words.slice(0, 7).join(' ');
+}
+
+function detectYoastCategory(data: ProductData): 'beauty' | 'coffee' | 'food' | 'detergent' | 'general' {
+  const text = [
+    data.correctedProductName,
+    data.englishProductName,
+    data.focusKeyword,
+    data.shortDescription,
+    data.metaDescription,
+    data.fullDescription,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  if (/قهوه|کافی|نسکافه|کاپوچینو|لاته|اسپرسو|coffee|nescafe|creamer|mate|کافی\s*میت|کافی\s*مت/.test(text)) return 'coffee';
+  if (/لوسیون|وازلین|gluta|hya|سرم|کرم|پوست|آبرسان|مرطوب|ضد\s*آفتاب|شامپو|ماسک\s*مو|نرم.?کننده\s*مو|آرایشی|بهداشتی|مو\b|hair|skin|lotion|serum|cream|vaseline/.test(text)) return 'beauty';
+  if (/شوینده|لباسشویی|ظرفشویی|پاک.?کننده|جرم.?گیر|مایع|پودر\s*لباس|detergent|cleaner/.test(text)) return 'detergent';
+  if (/برنج|روغن|چای|نوشیدنی|شکلات|بیسکویت|خوراکی|غذایی|پنیر|لبنیات|food|tea/.test(text)) return 'food';
+  return 'general';
+}
+
+function buildYoastShortDescription(focus: string, category: string): string {
+  if (category === 'beauty') {
+    return makeSentence(`${focus} انتخابی مناسب برای مراقبت روزانه، کمک به نرمی و لطافت پوست یا مو و تکمیل روتین بهداشتی است`);
+  }
+  if (category === 'coffee') {
+    return makeSentence(`${focus} گزینه‌ای کاربردی برای آماده‌سازی سریع نوشیدنی گرم، استفاده روزانه و لذت بردن از طعم قهوه در خانه یا محل کار است`);
+  }
+  if (category === 'detergent') {
+    return makeSentence(`${focus} محصولی کاربردی برای نظافت بهتر، مصرف روزانه و تکمیل سبد شوینده‌های خانگی است`);
+  }
+  if (category === 'food') {
+    return makeSentence(`${focus} محصولی مناسب برای مصرف روزانه، تکمیل سبد غذایی و خرید اینترنتی آسان با بررسی مشخصات و قیمت است`);
+  }
+  return makeSentence(`${focus} محصولی کاربردی برای خرید اینترنتی، بررسی مشخصات، مقایسه قیمت و انتخاب مطمئن‌تر است`);
+}
+
+function buildYoastMetaDescription(focus: string, category: string): string {
+  if (category === 'beauty') {
+    return makeSentence(`خرید ${focus} با بررسی مشخصات، کاربرد، روش مصرف و قیمت؛ مناسب برای مراقبت روزانه و کمک به نرمی و لطافت پوست یا مو`);
+  }
+  if (category === 'coffee') {
+    return makeSentence(`خرید ${focus} با قیمت مناسب و بررسی مشخصات، طعم، کاربرد و روش مصرف؛ انتخابی کاربردی برای نوشیدنی گرم روزانه`);
+  }
+  if (category === 'detergent') {
+    return makeSentence(`خرید ${focus} با بررسی قیمت، مشخصات، کاربرد و روش مصرف؛ مناسب برای نظافت روزانه و تکمیل سبد شوینده منزل`);
+  }
+  if (category === 'food') {
+    return makeSentence(`خرید ${focus} با قیمت مناسب و بررسی مشخصات، ترکیبات، کاربرد و شرایط نگهداری؛ مناسب برای مصرف روزانه`);
+  }
+  return makeSentence(`خرید ${focus} با بررسی قیمت، مشخصات، کاربرد و توضیحات کامل؛ انتخابی مناسب برای خرید اینترنتی مطمئن`);
+}
+
+function ensureMetaLength(meta: string, focus: string, category: string): string {
+  let value = normalizePlainText(meta);
+  const hasFocus = focus && value.includes(focus);
+
+  if (!value || value.length < 115 || value.length > 160 || !hasFocus) {
+    value = buildYoastMetaDescription(focus, category);
+  }
+
+  if (value.length > 155) {
+    value = truncateAtWord(value, 152);
+  }
+
+  if (value.length < 115) {
+    const suffix = category === 'beauty'
+      ? ' همراه با توضیحات کامل و نکات مصرف.'
+      : ' همراه با توضیحات کامل و امکان انتخاب بهتر.';
+    value = truncateAtWord(`${value.replace(/[.]+$/g, '')}${suffix}`, 155);
+  }
+
+  return makeSentence(value).replace('..', '.');
+}
+
+function ensureSeoTitle(title: string, focus: string): string {
+  let value = normalizePlainText(title);
+  if (!value || !value.includes(focus) || value.length > 70) {
+    value = `${focus} | خرید و قیمت`;
+  }
+  if (value.length > 70) {
+    value = truncateAtWord(value, 68);
+  }
+  return value;
+}
+
+function ensureFocusInFirstParagraph(html: string, focus: string): string {
+  if (!focus || !html) return html;
+  return html.replace(/<p>([\s\S]*?)<\/p>/i, (match, body) => {
+    const text = String(body || '');
+    if (text.includes(focus)) return match;
+    return `<p>${focus}؛ ${text}</p>`;
+  });
+}
+
+function ensureYoastSeoFields(data: ProductData): ProductData {
+  const focus = getPrimaryProductPhrase(data);
+  const category = detectYoastCategory({ ...data, focusKeyword: focus });
+
+  let shortDescription = normalizePlainText(data.shortDescription);
+  if (!shortDescription || shortDescription.length < 90 || shortDescription.length > 260 || !shortDescription.includes(focus)) {
+    shortDescription = buildYoastShortDescription(focus, category);
+  }
+  shortDescription = truncateAtWord(shortDescription, 260);
+
+  const seoTitle = ensureSeoTitle(data.seoTitle, focus);
+  const metaDescription = ensureMetaLength(data.metaDescription, focus, category);
+
+  let altImageText = normalizePlainText(data.altImageText);
+  if (!altImageText || !altImageText.includes(focus) || altImageText.length > 120) {
+    altImageText = truncateAtWord(`تصویر ${focus} برای معرفی محصول و خرید اینترنتی`, 115);
+  }
+
+  const fullDescription = ensureFocusInFirstParagraph(data.fullDescription, focus);
+
+  return {
+    ...data,
+    focusKeyword: focus,
+    shortDescription,
+    seoTitle,
+    metaDescription,
+    altImageText,
+    fullDescription,
+  };
+}
+
 function normalizeProductData(data: ProductData): ProductData {
   const cleanedData: ProductData = {
     ...data,
@@ -1457,7 +1617,7 @@ function normalizeProductData(data: ProductData): ProductData {
     altImageText: String(data.altImageText || '').replace(/<[^>]*>/g, '').trim(),
   };
 
-  return enrichAdvancedSeoAnalysis(cleanedData);
+  return enrichAdvancedSeoAnalysis(ensureYoastSeoFields(cleanedData));
 }
 
 
@@ -1666,37 +1826,59 @@ function ensureMohannadFullDescriptionDepth(
 
 function sanitizeCountryFieldsInDescription(html: string): string {
   let output = String(html || '');
+  const seriesCountryText = 'بستگی به سری ساخت دارد';
+  const seriesCountryItem = `<li>کشور سازنده: ${seriesCountryText}</li>`;
 
-  // Remove any list item with unknown / unspecified values.
-  output = output.replace(
-    /<li>\s*[^<:：]*[:：]\s*(?:نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
-    ''
-  );
-
-  // User preference: do not show "کشور مبدأ برند" in product specs; only "کشور سازنده" may appear.
+  // Never show country of brand origin. User wants only "کشور سازنده".
   output = output.replace(
     /<li>\s*کشور\s*مب[ددا][أا]?\s*برند\s*[:：][\s\S]*?<\/li>/gi,
     ''
   );
 
-  // Remove generic origin country fields too, to avoid showing two different country labels.
+  // Remove generic origin country labels to avoid duplicated/contradictory country fields.
   output = output.replace(
     /<li>\s*کشور\s*مب[ددا][أا]?\s*[:：][\s\S]*?<\/li>/gi,
     ''
   );
-
   output = output.replace(
     /<li>\s*مب[ددا][أا]?\s*تولید\s*[:：][\s\S]*?<\/li>/gi,
     ''
   );
 
-  // If country of manufacture is unknown, remove it too.
+  // If the model leaked instruction text or unknown values, replace with the exact user-approved phrase.
   output = output.replace(
-    /<li>\s*کشور\s*سازنده\s*[:：]\s*(?:نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
+    /<li>\s*کشور\s*سازنده\s*[:：]\s*(?:اگر\s*مشخص\s*است|اگر\s*قطعی\s*و\s*مشخص\s*است|فقط\s*اگر\s*قطعی\s*و\s*مشخص\s*است|اگر\s*کشور\s*واقعی\s*مشخص\s*است[\s\S]*?|نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
+    seriesCountryItem
+  );
+
+  // Remove other unknown values in specs; country has its special series/build fallback.
+  output = output.replace(
+    /<li>\s*(?!کشور\s*سازنده\s*[:：])[^<:：]*[:：]\s*(?:اگر\s*مشخص\s*است|نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
     ''
   );
 
-  // Clean empty lists/spaces caused by removals.
+  // If specs section exists and has no country manufacturer line, add the safe series/build note.
+  const specsPattern = /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i;
+  output = output.replace(specsPattern, (_match, open, body, close) => {
+    const bodyText = String(body || '');
+    if (/کشور\s*سازنده\s*[:：]/i.test(bodyText)) {
+      return `${open}${bodyText}${close}`;
+    }
+    return `${open}${bodyText.trimEnd()}\n${seriesCountryItem}\n${close}`;
+  });
+
+  // Deduplicate country manufacturer list items.
+  let seenCountry = false;
+  output = output.replace(/<li>\s*کشور\s*سازنده\s*[:：][\s\S]*?<\/li>/gi, (item) => {
+    if (seenCountry) return '';
+    seenCountry = true;
+    // Keep real country if it is not instruction/unknown text; otherwise use series fallback.
+    if (/اگر\s*مشخص\s*است|نامشخص|نامعلوم|unknown|not\s*specified|undefined|null/i.test(item)) {
+      return seriesCountryItem;
+    }
+    return item;
+  });
+
   output = output
     .replace(/<ul>\s*<\/ul>/gi, '')
     .replace(/\n{3,}/g, '\n')
