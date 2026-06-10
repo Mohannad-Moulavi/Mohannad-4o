@@ -58,19 +58,19 @@ const advancedSeoAnalysisSchema = {
       type: 'array',
       items: { type: 'string' },
       minItems: 8,
-      description: 'آرایه‌ای از حداقل ۸ عبارت کلیدی مترادف یا مرتبط. فقط کلمات کوتاه نده؛ عبارت‌های خرید، قیمت، برند، مدل و کاربرد محصول را هم اضافه کن.',
+      description: 'عبارت‌های مترادف و نزدیک به نام محصول؛ این‌ها جدا نمایش داده نمی‌شوند و داخل لیست ترکیبی کلیدواژه‌های مرتبط، مترادف و LSI ادغام می‌شوند.',
     },
     lsiKeywords: {
       type: 'array',
       items: { type: 'string' },
       minItems: 10,
-      description: 'آرایه‌ای از حداقل ۱۰ کلیدواژه معنایی مرتبط (LSI)، شامل دسته‌بندی، کاربرد، ویژگی‌ها، نیاز کاربر و عبارات رایج بازار.',
+      description: 'عبارت‌های LSI و معنایی مرتبط با محصول؛ این‌ها جدا نمایش داده نمی‌شوند و داخل همان لیست ترکیبی ادغام می‌شوند.',
     },
     longTailKeywords: {
       type: 'array',
       items: { type: 'string' },
       minItems: 8,
-      description: 'آرایه‌ای از حداقل ۸ عبارت کلیدی دم‌بلند و دقیق‌تر؛ مثل خرید آنلاین، قیمت، بهترین، مناسب برای، محصول اصل و نام کامل محصول.',
+      description: 'عبارت‌های خرید، قیمت و long-tail مرتبط؛ این‌ها جدا نمایش داده نمی‌شوند و داخل همان لیست ترکیبی ادغام می‌شوند.',
     },
     semanticEntities: {
       type: 'array',
@@ -344,13 +344,13 @@ const schemaInstruction = `
     "internalLinkingSuggestions": ["string"]
   }
 }
-برای advancedSeoAnalysis کم ننویس. آرایه‌ها باید مفصل باشند:
-- keyphraseSynonyms حداقل ۸ مورد
-- lsiKeywords حداقل ۱۰ مورد
-- longTailKeywords حداقل ۸ مورد
-- semanticEntities حداقل ۸ مورد
-- internalLinkingSuggestions حداقل ۵ مورد
-بخش کلیدواژه‌ها باید در مجموع حداقل ۳۰ عبارت یکتا بدهد.
+برای advancedSeoAnalysis فقط روی کلیدواژه‌های مرتبط تمرکز کن.
+UI فقط یک خروجی نشان می‌دهد: «کلیدواژه‌های مرتبط، مترادف و LSI». این خروجی باید ترکیبی باشد.
+بنابراین آرایه‌های keyphraseSynonyms، lsiKeywords، longTailKeywords و semanticEntities را مثل یک مخزن واحد پر کن تا در UI یک لیست ترکیبی از کلیدواژه‌های مرتبط، مترادف و LSI نمایش داده شود.
+برچسب‌های جدا مثل «کلیدواژه‌های مترادف»، «LSI»، «دم‌بلند» یا «موجودیت» در خروجی نهایی نمایش داده نشوند؛ فقط خود عبارت‌ها داخل یک لیست ترکیبی بیایند.
+در مجموع حداقل ۴۰ عبارت کلیدی یکتا بده.
+عبارت‌ها باید طبیعی، فروشگاهی و مرتبط باشند؛ موارد بی‌ربط مثل «محصول مراقبتی» برای خوراکی‌ها ننویس.
+internalLinkingSuggestions و searchIntent را فقط برای سازگاری JSON پر کن، اما در UI نمایش داده نمی‌شوند.
 هیچ کلید اضافه‌ای تولید نکن.
 `;
 
@@ -1155,6 +1155,227 @@ function uniqueSeoItems(items: Array<string | undefined | null>): string[] {
   return output;
 }
 
+
+function detectKeywordCategoryText(data: ProductData): string {
+  const text = [
+    data.correctedProductName,
+    data.focusKeyword,
+    data.englishProductName,
+    data.shortDescription,
+    data.metaDescription,
+    data.fullDescription,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  if (/قهوه|کافی|نسکافه|کاپوچینو|لاته|اسپرسو|coffee|nescafe|creamer|mate|کافی\s*میت|کافی\s*مت/.test(text)) {
+    return 'coffee';
+  }
+  if (/لوسیون|وازلین|gluta|hya|سرم|کرم|پوست|آبرسان|مرطوب|ضد\s*آفتاب|شامپو|ماسک\s*مو|نرم.?کننده\s*مو|آرایشی|بهداشتی|مو\b|hair|skin|lotion|serum|cream|vaseline/.test(text)) {
+    return 'beauty';
+  }
+  if (/پنیر|لبنیات|شیر|ماست|کره|خامه|دوغ|cheese|dairy/.test(text)) {
+    return 'dairy';
+  }
+  if (/آجیل|خشکبار|پسته|بادام|گردو|فندق|کشمش|خرما|انجیر|تخمه|cashew|pistachio|almond|walnut/.test(text)) {
+    return 'nuts';
+  }
+  if (/شوینده|لباسشویی|ظرفشویی|پاک.?کننده|جرم.?گیر|مایع|پودر\s*لباس|detergent|cleaner/.test(text)) {
+    return 'detergent';
+  }
+  if (/برنج|روغن|چای|نوشیدنی|شکلات|بیسکویت|خوراکی|غذایی|رب|تن ماهی|ماکارونی|زعفران|food|tea/.test(text)) {
+    return 'food';
+  }
+  return 'general';
+}
+
+function relatedKeywordExtrasByCategory(category: string, shortProduct: string, brand: string, product: string): string[] {
+  const s = shortProduct || product;
+  const b = brand || '';
+  const common = [
+    s,
+    product,
+    `خرید ${s}`,
+    `قیمت ${s}`,
+    `خرید آنلاین ${s}`,
+    `خرید اینترنتی ${s}`,
+    `${s} اصل`,
+    `${s} با کیفیت`,
+    `مشخصات ${s}`,
+    `ویژگی‌های ${s}`,
+    `کاربرد ${s}`,
+    `راهنمای خرید ${s}`,
+    `قیمت روز ${s}`,
+    `بهترین ${s}`,
+    `${s} فروشگاهی`,
+    `خرید ${s} اصل`,
+    `قیمت ${s} اصل`,
+    `خرید ${s} با قیمت مناسب`,
+    `مشخصات و خرید ${s}`,
+  ];
+
+  if (category === 'coffee') {
+    return [
+      ...common,
+      b && `خرید ${b}`,
+      b && `قیمت ${b}`,
+      'قهوه فوری',
+      'قهوه آماده',
+      'پودر قهوه فوری',
+      'نوشیدنی گرم',
+      'نوشیدنی فوری قهوه',
+      'کافی میت',
+      'کافی مت',
+      'کرمر قهوه',
+      'پودر کافی میت',
+      'طعم‌دهنده قهوه',
+      'مکمل قهوه',
+      'قهوه فوری نستله',
+      'کافی میت نستله',
+      'پودر کرمر قهوه',
+      'کرمر قهوه نستله',
+      'خرید قهوه فوری',
+      'قیمت قهوه فوری',
+      'خرید پودر کافی میت',
+      'قیمت کافی میت نستله',
+      'قهوه برای صبحانه',
+      'قهوه محل کار',
+      'نوشیدنی گرم روزانه',
+      'قهوه فوری برای مصرف روزانه',
+      'پودر نوشیدنی قهوه',
+      'محصولات قهوه نستله',
+      'قهوه فوری اصل',
+      'خرید آنلاین قهوه فوری',
+      'قیمت پودر قهوه فوری',
+      'بهترین کرمر قهوه',
+      'خرید کرمر قهوه',
+      'قیمت کرمر قهوه',
+    ].filter(Boolean);
+  }
+
+  if (category === 'beauty') {
+    return [
+      ...common,
+      b && `خرید ${b}`,
+      b && `قیمت ${b}`,
+      'مراقبت پوست',
+      'آبرسان پوست',
+      'نرم کننده پوست',
+      'لوسیون بدن',
+      'لوسیون آبرسان',
+      'لوسیون مرطوب کننده',
+      'سرم پوست',
+      'روتین مراقبت پوست',
+      'محصولات مراقبت بدن',
+      'پوست خشک',
+      'نرمی و لطافت پوست',
+      'خرید لوسیون بدن',
+      'قیمت لوسیون بدن',
+      'خرید لوسیون آبرسان',
+      'لوسیون بدن اصل',
+      'محصولات آرایشی بهداشتی',
+      'کرم و لوسیون بدن',
+      'بهترین لوسیون بدن',
+      'لوسیون مناسب استفاده روزانه',
+      'مرطوب کننده بدن',
+      'خرید محصولات مراقبت پوست',
+      'قیمت محصولات مراقبت پوست',
+    ].filter(Boolean);
+  }
+
+  if (category === 'dairy') {
+    return [
+      ...common,
+      'پنیر',
+      'لبنیات',
+      'پنیر صبحانه',
+      'محصولات لبنی',
+      'پنیر خوراکی',
+      'پنیر مناسب صبحانه',
+      'خرید پنیر',
+      'قیمت پنیر',
+      'خرید آنلاین پنیر',
+      'پنیر بسته بندی',
+      'پنیر برای صبحانه',
+      'پنیر برای میان وعده',
+      'خرید لبنیات',
+      'قیمت محصولات لبنی',
+    ];
+  }
+
+  if (category === 'nuts') {
+    return [
+      ...common,
+      'آجیل',
+      'خشکبار',
+      'آجیل و خشکبار',
+      'مغزهای خوراکی',
+      'تنقلات سالم',
+      'آجیل پذیرایی',
+      'خرید آجیل',
+      'قیمت آجیل',
+      'خرید خشکبار',
+      'قیمت خشکبار',
+      'خرید آنلاین آجیل و خشکبار',
+      'آجیل تازه',
+      'خشکبار تازه',
+      'آجیل مناسب پذیرایی',
+    ];
+  }
+
+  if (category === 'detergent') {
+    return [
+      ...common,
+      'مواد شوینده',
+      'شوینده خانگی',
+      'نظافت منزل',
+      'پاک کننده',
+      'شوینده لباس',
+      'شوینده ظرف',
+      'خرید مواد شوینده',
+      'قیمت مواد شوینده',
+      'خرید شوینده اصل',
+      'محصولات نظافت منزل',
+      'پاک کننده قوی',
+    ];
+  }
+
+  if (category === 'food') {
+    return [
+      ...common,
+      'مواد غذایی',
+      'خوراکی',
+      'هایپرمارکت',
+      'محصولات غذایی',
+      'خرید مواد غذایی',
+      'قیمت مواد غذایی',
+      'خرید آنلاین خوراکی',
+      'سبد خرید روزانه',
+      'محصولات مصرفی روزانه',
+    ];
+  }
+
+  return [
+    ...common,
+    'خرید محصول',
+    'قیمت محصول',
+    'محصول اصل',
+    'محصول فروشگاهی',
+    'خرید آنلاین محصول',
+    'مشخصات محصول',
+    'راهنمای خرید محصول',
+  ];
+}
+
+function getLikelyBrand(data: ProductData): string {
+  const text = [
+    data.correctedProductName,
+    data.englishProductName,
+    data.focusKeyword,
+  ].filter(Boolean).join(' ');
+
+  const knownBrands = ['نستله', 'وازلین', 'کلیر', 'سنسوداین', 'الیزاوکا', 'Elizavecca', 'Vaseline', 'Nestle', 'Nescafe'];
+  return knownBrands.find((brand) => text.toLowerCase().includes(brand.toLowerCase())) || '';
+}
+
 function enrichAdvancedSeoAnalysis(data: ProductData): ProductData {
   const analysis = data.advancedSeoAnalysis || {
     keyphraseSynonyms: [],
@@ -1169,108 +1390,55 @@ function enrichAdvancedSeoAnalysis(data: ProductData): ProductData {
   const focus = String(data.focusKeyword || product).trim();
   const english = String(data.englishProductName || '').trim();
   const shortProduct = focus || product;
-  const firstToken = product.split(/\s+/).find((part) => part.length > 2) || '';
+  const brand = getLikelyBrand(data);
+  const category = detectKeywordCategoryText(data);
 
-  const baseKeywords = uniqueSeoItems([
-    product,
-    focus,
-    shortProduct,
-    english,
-    firstToken,
-    ...analysis.keyphraseSynonyms,
-    ...analysis.lsiKeywords,
-    ...analysis.longTailKeywords,
-    ...analysis.semanticEntities,
-    `خرید ${shortProduct}`,
-    `قیمت ${shortProduct}`,
-    `خرید آنلاین ${shortProduct}`,
-    `${shortProduct} اصل`,
-    `${shortProduct} فروشگاهی`,
-    `${shortProduct} با کیفیت`,
-    `${shortProduct} مناسب استفاده روزانه`,
-    `بهترین ${shortProduct}`,
-    `راهنمای خرید ${shortProduct}`,
-    `مشخصات ${shortProduct}`,
-    `کاربرد ${shortProduct}`,
-    `ویژگی‌های ${shortProduct}`,
-    `خرید اینترنتی ${shortProduct}`,
-    `قیمت روز ${shortProduct}`,
-    `${firstToken} ${shortProduct}`,
-  ]);
-
-  const keyphraseSynonyms = uniqueSeoItems([
-    ...analysis.keyphraseSynonyms,
-    product,
-    focus,
-    shortProduct,
-    `خرید ${shortProduct}`,
-    `قیمت ${shortProduct}`,
-    `${shortProduct} اصل`,
-    `${shortProduct} با کیفیت`,
-    `خرید آنلاین ${shortProduct}`,
-    ...baseKeywords,
-  ]).slice(0, 14);
-
-  const lsiKeywords = uniqueSeoItems([
-    ...analysis.lsiKeywords,
-    `ویژگی‌های ${shortProduct}`,
-    `مشخصات ${shortProduct}`,
-    `کاربرد ${shortProduct}`,
-    `راهنمای مصرف ${shortProduct}`,
-    `محصول مراقبتی`,
-    `محصول فروشگاهی`,
-    `انتخاب محصول مناسب`,
-    `خرید مطمئن محصول`,
-    `بررسی ${shortProduct}`,
-    ...baseKeywords,
-  ]).slice(0, 16);
-
-  const longTailKeywords = uniqueSeoItems([
-    ...analysis.longTailKeywords,
-    `خرید آنلاین ${shortProduct} با قیمت مناسب`,
-    `قیمت ${shortProduct} اصل در فروشگاه اینترنتی`,
-    `بهترین ${shortProduct} برای استفاده روزانه`,
-    `مشخصات و خرید ${shortProduct}`,
-    `راهنمای خرید ${shortProduct} اصل`,
-    `خرید اینترنتی ${shortProduct} با توضیحات کامل`,
-    `قیمت روز ${shortProduct} و مشخصات محصول`,
-    `خرید ${shortProduct} مناسب مصرف روزانه`,
-  ]).slice(0, 12);
-
-  const semanticEntities = uniqueSeoItems([
-    ...analysis.semanticEntities,
+  const relatedKeywords = uniqueSeoItems([
     product,
     focus,
     english,
-    firstToken,
-    'برند محصول',
-    'دسته‌بندی محصول',
-    'مشخصات محصول',
-    'کاربرد محصول',
-    'خرید آنلاین',
-    'قیمت محصول',
-  ]).slice(0, 12);
+    brand,
+    ...(analysis.keyphraseSynonyms || []),
+    ...(analysis.lsiKeywords || []),
+    ...(analysis.longTailKeywords || []),
+    ...(analysis.semanticEntities || []),
+    ...relatedKeywordExtrasByCategory(category, shortProduct, brand, product),
+  ])
+    .filter((item) => item && item.length > 1)
+    .filter((item) => {
+      const normalized = item.toLowerCase().trim();
+      const banned = [
+        'محصول مراقبتی',
+        'محصول فروشگاهی',
+        'برند محصول',
+        'دسته‌بندی محصول',
+        'موجودیت معنایی',
+        'lsi',
+        'long-tail',
+        'دم بلند',
+        'دم‌بلند',
+      ];
+      return !banned.includes(normalized);
+    })
+    .slice(0, 55);
 
-  const internalLinkingSuggestions = uniqueSeoItems([
-    ...analysis.internalLinkingSuggestions,
-    focus,
-    product,
-    `دسته‌بندی ${shortProduct}`,
-    `محصولات مرتبط با ${shortProduct}`,
-    `خرید ${shortProduct}`,
-    'دسته مادر مرتبط',
-    'صفحه برند محصول',
-  ]).slice(0, 8);
-
+  // Keep the old JSON shape for TypeScript/UI compatibility, but the UI displays ONLY the merged related keyword list.
+  // Split the long list across arrays so the final merged output is long, without showing separate groups.
   return {
     ...data,
     advancedSeoAnalysis: {
-      keyphraseSynonyms,
-      lsiKeywords,
-      longTailKeywords,
-      semanticEntities,
+      keyphraseSynonyms: relatedKeywords.slice(0, 18),
+      lsiKeywords: relatedKeywords.slice(18, 36),
+      longTailKeywords: relatedKeywords.slice(36, 50),
+      semanticEntities: relatedKeywords.slice(50, 55),
       searchIntent: analysis.searchIntent || 'خرید محصول؛ بررسی قیمت، مشخصات، کاربرد و انتخاب گزینه مناسب برای خرید اینترنتی.',
-      internalLinkingSuggestions,
+      internalLinkingSuggestions: uniqueSeoItems([
+        ...(analysis.internalLinkingSuggestions || []),
+        focus,
+        product,
+        `دسته‌بندی ${shortProduct}`,
+        `خرید ${shortProduct}`,
+      ]).slice(0, 5),
     },
   };
 }
