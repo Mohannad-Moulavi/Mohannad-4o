@@ -35,20 +35,16 @@ const WEB_SEARCH_TOTAL_TIMEOUT_MS = Number(process.env.WEB_SEARCH_TOTAL_TIMEOUT_
 const AI_MODEL_TIMEOUT_MS = Number(process.env.AI_MODEL_TIMEOUT_MS || 55000);
 
 const MODELS: GitHubModel[] = [
-  // Best balance for GitHub Models free limits: strong vision + usually lower-tier quota than full GPT-4o.
-  // If GitHub classifies this as a Low model, Free/Pro accounts get 150 requests/day.
-  { id: process.env.GITHUB_MODEL || 'openai/gpt-4o-mini', vision: true },
-  { id: 'azure-openai/gpt-4o-mini', vision: true },
-
-  // Full GPT-4o is stronger for reading difficult product labels, but GitHub usually treats high models with lower daily limits.
-  // Kept as fallback only, not primary, so you can still target 100+ daily requests on the mini model first.
-  { id: 'openai/gpt-4o', vision: true },
+  // Best quality mode: full GPT-4o first for better image understanding + Persian SEO writing.
+  { id: process.env.GITHUB_MODEL || 'openai/gpt-4o', vision: true },
   { id: 'azure-openai/gpt-4o', vision: true },
 
-  // Text-only fallbacks for SEO structure if vision calls are rate-limited or image payload is rejected.
-  { id: 'openai/gpt-4o-mini', vision: false },
+  // GPT-4.1 can be strong for instruction-following/text structure; kept as fallback.
+  { id: 'openai/gpt-4.1', vision: true },
+
+  // Mini models are only fallback now, not the main quality model.
+  { id: 'openai/gpt-4o-mini', vision: true },
   { id: 'openai/gpt-4.1-mini', vision: false },
-  { id: 'openai/gpt-4.1', vision: false },
 ];
 
 const advancedSeoAnalysisSchema = {
@@ -1958,8 +1954,8 @@ async function requestGitHubModel(
   const body: Record<string, any> = {
     model: model.id,
     messages: buildMessages(model, productName, productImage, briefDescription, fullSystemInstruction, isNutsOrDriedFruit, webSearchContext),
-    temperature: 0.35,
-    top_p: 0.9,
+    temperature: 0.25,
+    top_p: 0.85,
     max_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 4000),
   };
 
