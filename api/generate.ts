@@ -170,7 +170,7 @@ const systemInstruction = `
 5. اگر چیزی از تصویر یا توضیحات مشخص نیست، حدس خطرناک نزن؛ اما ویژگی‌های عمومی و رایج همان دسته محصول را طبیعی اضافه کن.
 6. ساختار پایه fullDescription را با الهام از قالب اصلی Mohannad SEO حفظ کن، اما بخش‌ها را پویا و متناسب با نوع همان محصول انتخاب کن. برای همه محصولات تیترهای نامناسب و تکراری مثل «چرا انتخاب هوشمندانه است» ننویس.
 7. در fullDescription از Markdown، علامت ---، تیترهای h2/h3، جدول، JSON داخلی یا متن بیرون از HTML استفاده نکن.
-7.1. در fullDescription دقیقاً ۱ لینک داخلی قابل ویرایش با تگ <a href="#">متن لینک مرتبط</a> قرار بده. لینک باید داخل یک جمله طبیعی و واقع‌گرایانه باشد، نه به شکل باکس جدا یا راهنمای ویرایش. اگر جمله لینک‌دار مصنوعی شد، جمله را بازنویسی کن تا منطقی شود؛ href همیشه باید # باشد.
+7.1. در fullDescription دقیقاً ۱ لینک داخلی قابل ویرایش با تگ <a href="https://noon-valqalam.ir/product-category/hypermarket/">متن لینک مرتبط</a> قرار بده. لینک باید داخل یک جمله طبیعی و واقع‌گرایانه باشد، نه به شکل باکس جدا یا راهنمای ویرایش. اگر جمله لینک‌دار مصنوعی شد، جمله را بازنویسی کن تا منطقی شود؛ href همیشه باید # باشد.
 8. اگر بخش «اطلاعات تازه از جستجوی وب» در پیام کاربر وجود داشت، آن را منبع تازه‌تر از دانش داخلی خودت بدان و برای محصولاتی مثل موبایل، مدل‌های جدید، محصولات ترند و کالاهای وابسته به سال/نسخه، حتماً از همان اطلاعات استفاده کن.
 9. نام مدل/نسخه محصول را به مدل قدیمی‌تر تبدیل نکن. اگر کاربر iPhone 17، Galaxy S26 یا هر مدل جدیدی نوشت، مجاز نیستی آن را با iPhone 13، iPhone 15 یا مدل قدیمی جایگزین کنی؛ مگر اینکه جستجوی وب صراحتاً نشان دهد نام واردشده اشتباه است.
 10. اگر جستجوی وب اطلاعات قطعی کافی نداد، با همان نام کاربر محتوا بساز و از حدس زدن مشخصات فنی عددی، قیمت، تاریخ عرضه یا ویژگی‌های قطعی خودداری کن.
@@ -189,7 +189,7 @@ const nutsDescriptionPrompt = `
 - طول متن: کل توضیحات باید بین ۲۲۰ تا ۳۰۰ کلمه باشد.
 - خوانایی: جملات باید کوتاه و روان باشند. حداقل در ۲۵٪ جملات از کلمات انتقالی استفاده کن و میزان استفاده از صدای مجهول را به کمتر از ۱۰٪ محدود کن.
 - استفاده از کلیدواژه کانونی: کلیدواژه باید در پاراگراف اول بیاید و به طور طبیعی ۳ تا ۴ بار در کل متن تکرار شود.
-- دقیقاً ۱ لینک داخلی قابل ویرایش با href="#" داخل یک جمله طبیعی و مرتبط قرار بده؛ جمله باید با کاربرد واقعی محصول هماهنگ باشد.
+- دقیقاً ۱ لینک داخلی واقعی از دسته‌بندی‌های سایت noon-valqalam.ir داخل یک جمله طبیعی و مرتبط قرار بده؛ href="#" ننویس.
 
 # 2. ساختار و فرمت متن بسیار مهم
 خروجی fullDescription باید دقیقاً با این ترتیب باشد:
@@ -234,8 +234,10 @@ const nutsDescriptionPrompt = `
   <li>نوع محصول: بر اساس نام اصلاح‌شده</li>
   <li>فرآوری: بر اساس اطلاعات موجود</li>
   <li>وزن/بسته‌بندی/برند: اگر از تصویر یا توضیح مشخص است</li>
-  <li>کشور سازنده: اگر کشور واقعی مشخص است همان کشور را بنویس؛ اگر مشخص نیست دقیقاً بنویس «بستگی به سری ساخت دارد»</li>
-  <li>کشور سازنده: اگر کشور واقعی مشخص است همان کشور را بنویس؛ اگر مشخص نیست دقیقاً بنویس «بستگی به سری ساخت دارد»</li>
+  <li>کشور مبدأ: اگر کشور واقعی و قطعی مشخص است همان کشور را بنویس</li>
+<li>کشور سازنده: اگر کشور مشخص نیست، بنویس «بستگی به سری ساخت دارد»</li>
+  <li>کشور مبدأ: اگر کشور واقعی و قطعی مشخص است همان کشور را بنویس</li>
+<li>کشور سازنده: اگر کشور مشخص نیست، بنویس «بستگی به سری ساخت دارد»</li>
 </ul>
 <hr class="mohannad-divider">
 
@@ -299,7 +301,8 @@ const standardDescriptionPrompt = `
 <li>مدل: اگر مشخص است</li>
 <li>نوع محصول: دسته‌بندی دقیق محصول</li>
 <li>حجم/وزن/تعداد/رنگ/رایحه/طعم: فقط موارد قطعی</li>
-<li>کشور سازنده: اگر کشور واقعی مشخص است همان کشور را بنویس؛ اگر مشخص نیست دقیقاً بنویس «بستگی به سری ساخت دارد»</li>
+<li>کشور مبدأ: اگر کشور واقعی و قطعی مشخص است همان کشور را بنویس</li>
+<li>کشور سازنده: اگر کشور مشخص نیست، بنویس «بستگی به سری ساخت دارد»</li>
 <li>کاربرد: کاربرد اصلی محصول</li>
 </ul>
 <hr />
@@ -314,8 +317,8 @@ const standardDescriptionPrompt = `
 # قوانین مهم
 - متن باید طبیعی، فروشگاهی و قابل انتشار باشد.
 - جمله‌های تکراری، هوش مصنوعی، اغراق‌آمیز یا بی‌ربط ننویس.
-- در بخش مشخصات محصول، کشور را فقط با برچسب «کشور سازنده» بنویس. اگر کشور واقعی مشخص است، همان کشور را بنویس؛ اگر مشخص نیست، دقیقاً بنویس: «کشور سازنده: بستگی به سری ساخت دارد».
-- «کشور مبدأ برند» را در خروجی مشخصات محصول ننویس. عبارت‌های «اگر مشخص است»، «نامشخص»، «نامعلوم» یا متن دستورالعمل را هرگز داخل خروجی نیاور.
+- در بخش مشخصات محصول اگر کشور واقعی از تصویر، متن بسته‌بندی، توضیح کاربر یا وب‌سرچ معتبر مشخص است، با برچسب «کشور مبدأ» همان کشور را بنویس. اگر کشور مشخص نیست، بنویس: «کشور سازنده: بستگی به سری ساخت دارد».
+- «کشور مبدأ برند» را ننویس. فقط «کشور مبدأ» برای کشور واقعی و قطعی یا «کشور سازنده: بستگی به سری ساخت دارد» برای حالت نامشخص مجاز است. عبارت‌های «اگر مشخص است»، «نامشخص»، «نامعلوم» یا متن دستورالعمل را هرگز داخل خروجی نیاور.
 - از Markdown، جدول، h2 و h3 استفاده نکن.
 - فقط تگ‌های مجاز: <p>، <strong>، <h5>، <ul>، <li>، <a>، <hr />
 `;
@@ -676,7 +679,8 @@ function buildUserPrompt(
   userPrompt += `\n\nوظیفه تو:\n1. نام محصول را اصلاح و کامل کن. correctedProductName باید بهترین نام فروشگاهی فارسی و واقعی محصول باشد، نه فقط تکرار نام خام کاربر.
 1.1. اگر تصویر ارسال شده، نام محصول را از تصویر، لوگو، نوشته‌های بسته‌بندی، شکل محصول و کاربرد آن استخراج کن. اگر نام خام کاربر با تصویر تناقض دارد، نام خام را کنار بگذار و محصول واقعی تصویر را بنویس.
 1.2. اگر تصویر ارسال نشده، نام خام کاربر را با احتیاط اصلاح کن و محصول را به مدل یا دسته کاملاً نامرتبط تبدیل نکن.\n2. اگر محصول تعداد، وزن، حجم، مدل، برند، سری، رنگ، رایحه یا طعم دارد و از نام/عکس/توضیح مشخص است، آن را به نام و مشخصات اضافه کن.\n3. fullDescription را با قالب پایه بساز و بخش تکمیلی را فقط بر اساس نیاز و نوع همان محصول انتخاب کن؛ تیترهای نامناسب را برای همه محصولات تکرار نکن.\n4. متن باید مخصوص همین محصول باشد و کلی‌گویی بی‌ارزش نداشته باشد.\n5. اگر اطلاعاتی مطمئن نیست، آن را به صورت عدد/مدل قطعی ننویس.
-6. اگر کاربر فیلدهایی مثل برند، مدل، حجم،  کشور مبدأ، کشور سازنده یا نوع محصول داده، همان‌ها را با همان برچسب در بخش 📦 مشخصات محصول حفظ کن و حذف نکن.`;
+6. اگر کاربر فیلدهایی مثل برند، مدل، حجم، کشور مبدأ، کشور سازنده یا نوع محصول داده، همان‌ها را در بخش 📦 مشخصات محصول حفظ کن و حذف نکن.
+7. برای لینک داخلی فقط از دسته‌بندی‌های واقعی سایت noon-valqalam.ir استفاده کن. href="#" ننویس؛ لینک نهایی توسط کد از لیست دسته‌بندی‌های واقعی سایت جایگزین می‌شود.`;
 
   if (productImage && imageAttachedForThisModel) {
     userPrompt += '\n\nتصویر محصول هم ارسال شده است. تصویر را دقیق بخوان: متن روی بسته‌بندی، لوگو، برند، تعداد، وزن/حجم، مدل، رنگ، رایحه/طعم، کاربرد و جزئیات ظاهری را استخراج کن و در نام اصلاح‌شده و مشخصات محصول لحاظ کن. اگر نام خام کاربر با تصویر فرق داشت، تصویر را منبع معتبرتر بدان و نام محصول را بر اساس تصویر اصلاح کن.';
@@ -780,10 +784,16 @@ function extractJson(text: string): ProductData {
 
 function normalizeInlineLinksInHtml(html: string): string {
   let output = String(html || '')
-    // لینک‌های واقعی یا خارجی نباید وارد توضیحات شوند؛ فقط جایگاه قابل ویرایش با href="#" بماند.
-    .replace(/<a\b([^>]*)href=["'][^"']*["']([^>]*)>/gi, '<a href="#">')
-    .replace(/<a\b(?![^>]*href=)([^>]*)>/gi, '<a href="#">')
-    .replace(/https?:\/\/[^\s<"']+/gi, '#')
+    // Keep real noon-valqalam internal category links, but remove random/external links from model output.
+    .replace(/<a\b([^>]*)href=["']([^"']*)["']([^>]*)>/gi, (_match, before, href, after) => {
+      const safeHref = String(href || '');
+      if (safeHref.startsWith('https://noon-valqalam.ir/')) {
+        return `<a href="${safeHref}">`;
+      }
+      return '<a>';
+    })
+    .replace(/<a\b(?![^>]*href=)([^>]*)>/gi, '<a>')
+    .replace(/https?:\/\/[^\s<"']+/gi, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 
@@ -914,61 +924,273 @@ function ensureKnownDetailsInDescription(
   return `${output}${fallbackSection}`;
 }
 
+const SITE_CATEGORIES: Array<{ title: string; href: string; keywords: string[] }> = [
+  { title: "بهداشت بانوان و آقایان", href: "https://noon-valqalam.ir/product-category//deodorant-spray/women-men-care/", keywords: ["بهداشت بانوان و آقایان"] },
+  { title: "ابزار آرایش و پیرایش", href: "https://noon-valqalam.ir/product-category/cosmetics/hair/hair-cutting-tools/", keywords: ["ابزار آرایش و پیرایش"] },
+  { title: "لوازم آرایشی بهداشتی", href: "https://noon-valqalam.ir/product-category/cosmetics/", keywords: ["لوازم آرایشی بهداشتی", "آرایشی بهداشتی", "cosmetics"] },
+  { title: "بهداشت دهان و دندان", href: "https://noon-valqalam.ir/product-category/cosmetics/personal-care/mouth-teeth/", keywords: ["بهداشت دهان و دندان", "خمیر دندان", "مسواک", "دهان", "دندان", "toothpaste", "tooth"] },
+  { title: "دئودرانت و ضد تعریق", href: "https://noon-valqalam.ir/product-category//deodorant-spray/women-men-care/deodorant/", keywords: ["دئودرانت و ضد تعریق", "دئودرانت", "ضد تعریق", "deodorant"] },
+  { title: "جعبه کادویی زعفران", href: "https://noon-valqalam.ir/product-category/saffron/saffron-gift-pack/", keywords: ["جعبه کادویی زعفران"] },
+  { title: "مراقبت و زیبایی مو", href: "https://noon-valqalam.ir/product-category/cosmetics/hair/", keywords: ["مراقبت و زیبایی مو", "مو", "ماسک مو", "سرم مو", "نرم کننده مو", "hair"] },
+  { title: "پاک کننده و شوینده", href: "https://noon-valqalam.ir/product-category/skincare/cleanser/", keywords: ["پاک کننده و شوینده"] },
+  { title: "زعفران نیم مثقالی", href: "https://noon-valqalam.ir/product-category/saffron/saffron-nim-mesghal/", keywords: ["زعفران نیم مثقالی"] },
+  { title: "مراقبت دست و ناخن", href: "https://noon-valqalam.ir/product-category/skincare/hand-nail-treat/", keywords: ["مراقبت دست و ناخن"] },
+  { title: "مراقبت چشم و ابرو", href: "https://noon-valqalam.ir/product-category/skincare/eye-care/", keywords: ["مراقبت چشم و ابرو"] },
+  { title: "آرایش چشم و ابرو", href: "https://noon-valqalam.ir/product-category/cosmetics/makeup-cosmetics-2/eye-makeup/", keywords: ["آرایش چشم و ابرو", "ریمل", "مداد چشم", "سایه", "ابرو", "آرایش چشم"] },
+  { title: "خوشبو کننده لباس", href: "https://noon-valqalam.ir/product-category/%d8%ae%d9%88%d8%b4%d8%a8%d9%88-%da%a9%d9%86%d9%86%d8%af%d9%87-%d9%84%d8%a8%d8%a7%d8%b3/", keywords: ["خوشبو کننده لباس"] },
+  { title: "زعفران دو مثقالی", href: "https://noon-valqalam.ir/product-category/saffron/saffron-2-mesghal/", keywords: ["زعفران دو مثقالی"] },
+  { title: "زعفران چهار گرمی", href: "https://noon-valqalam.ir/product-category/saffron/4g-saffron-saffron/", keywords: ["زعفران چهار گرمی"] },
+  { title: "زعفران یک مثقالی", href: "https://noon-valqalam.ir/product-category/saffron/saffron-1-mesghal/", keywords: ["زعفران یک مثقالی"] },
+  { title: "خوشبو کننده هوا", href: "https://noon-valqalam.ir/product-category/cosmetics/perfume/air-freshner/", keywords: ["خوشبو کننده هوا"] },
+  { title: "زعفران نیم گرمی", href: "https://noon-valqalam.ir/product-category/saffron/%d8%b2%d8%b9%d9%81%d8%b1%d8%a7%d9%86-%d9%86%db%8c%d9%85-%da%af%d8%b1%d9%85%db%8c/", keywords: ["زعفران نیم گرمی"] },
+  { title: "زعفران پنج گرمی", href: "https://noon-valqalam.ir/product-category/saffron/5g-saffron/", keywords: ["زعفران پنج گرمی"] },
+  { title: "پسته احمد آقایی", href: "https://noon-valqalam.ir/product-category/nuts/nut/pistachios/pistachio-ahmad-aghaei/", keywords: ["پسته احمد آقایی"] },
+  { title: "زعفران ده گرمی", href: "https://noon-valqalam.ir/product-category/saffron/10g-saffron/", keywords: ["زعفران ده گرمی"] },
+  { title: "زعفران دو گرمی", href: "https://noon-valqalam.ir/product-category/saffron/2gr-saffron/", keywords: ["زعفران دو گرمی"] },
+  { title: "زعفران سه گرمی", href: "https://noon-valqalam.ir/product-category/saffron/4g-saffron/", keywords: ["زعفران سه گرمی"] },
+  { title: "زعفران یک گرمی", href: "https://noon-valqalam.ir/product-category/saffron/1g-saffron/", keywords: ["زعفران یک گرمی"] },
+  { title: "محصولات کادوئی", href: "https://noon-valqalam.ir/product-category/gifts/", keywords: ["محصولات کادوئی"] },
+  { title: "خشکبار و آجیل", href: "https://noon-valqalam.ir/product-category/nuts/", keywords: ["خشکبار و آجیل", "آجیل و خشکبار"] },
+  { title: "پسته کله قوچی", href: "https://noon-valqalam.ir/product-category/nuts/nut/pistachios/pistachio-kalleh-ghouchi/", keywords: ["پسته کله قوچی"] },
+  { title: "کمربند حرارتی", href: "https://noon-valqalam.ir/product-category/%da%a9%d9%85%d8%b1%d8%a8%d9%86%d8%af-%d8%ad%d8%b1%d8%a7%d8%b1%d8%aa%db%8c/", keywords: ["کمربند حرارتی"] },
+  { title: "آجیل مناسبتی", href: "https://noon-valqalam.ir/product-category/nuts/nut/date-nuts/", keywords: ["آجیل مناسبتی"] },
+  { title: "دیگر محصولات", href: "https://noon-valqalam.ir/product-category/uncategorized/", keywords: ["دیگر محصولات"] },
+  { title: "مراقبت از مو", href: "https://noon-valqalam.ir/product-category/cosmetics/hair/hair-care/", keywords: ["مراقبت از مو"] },
+  { title: "مغز پسته خام", href: "https://noon-valqalam.ir/product-category/nuts/nut/pistachios/raw-pistachio/", keywords: ["مغز پسته خام"] },
+  { title: "ژله و کارامل", href: "https://noon-valqalam.ir/product-category/hypermarket/jelly-and-caramel/", keywords: ["ژله و کارامل"] },
+  { title: "آجیل ترکیبی", href: "https://noon-valqalam.ir/product-category/nuts/nut/mixed-nuts/", keywords: ["آجیل ترکیبی"] },
+  { title: "ابزار آرایش", href: "https://noon-valqalam.ir/product-category/cosmetics/makeup-cosmetics-2/makeup-accessories/", keywords: ["ابزار آرایش"] },
+  { title: "بادام زمینی", href: "https://noon-valqalam.ir/product-category/nuts/peanuts/", keywords: ["بادام زمینی"] },
+  { title: "بهداشت شخصی", href: "https://noon-valqalam.ir/product-category/cosmetics/personal-care/", keywords: ["بهداشت شخصی"] },
+  { title: "حبه میوه ای", href: "https://noon-valqalam.ir/product-category/nuts/dried-fruits/fruit-cubes/", keywords: ["حبه میوه ای"] },
+  { title: "زیبایی پوست", href: "https://noon-valqalam.ir/product-category/%d8%b2%db%8c%d8%a8%d8%a7%db%8c%db%8c-%d9%be%d9%88%d8%b3%d8%aa/", keywords: ["زیبایی پوست"] },
+  { title: "عطر و ادکلن", href: "https://noon-valqalam.ir/product-category/cosmetics/perfume/fragrance/", keywords: ["عطر و ادکلن", "عطر", "ادکلن", "perfume", "fragrance"] },
+  { title: "عطر و اسپری", href: "https://noon-valqalam.ir/product-category/cosmetics/perfume/", keywords: ["عطر و اسپری"] },
+  { title: "غلات صبحانه", href: "https://noon-valqalam.ir/product-category/hypermarket/cornflakes/", keywords: ["غلات صبحانه"] },
+  { title: "لوازم اصلاح", href: "https://noon-valqalam.ir/product-category/cosmetics/personal-care/shaving-supplies/", keywords: ["لوازم اصلاح"] },
+  { title: "لوازم قنادی", href: "https://noon-valqalam.ir/product-category/confectionery/", keywords: ["لوازم قنادی"] },
+  { title: "مراقبت صورت", href: "https://noon-valqalam.ir/product-category/skincare/face-care/", keywords: ["مراقبت صورت"] },
+  { title: "مراقبت پوست", href: "https://noon-valqalam.ir/product-category/skincare/", keywords: ["مراقبت پوست", "پوست", "آبرسان", "مرطوب کننده", "سرم پوست", "کرم صورت", "کرم پوست", "skin", "serum", "cream"] },
+  { title: "مواد شوینده", href: "https://noon-valqalam.ir/product-category/hypermarket/%d9%85%d9%88%d8%a7%d8%af-%d8%b4%d9%88%db%8c%d9%86%d8%af%d9%87/", keywords: ["مواد شوینده", "شوینده", "مایع لباسشویی", "پودر لباسشویی", "جرم گیر", "detergent", "cleaner"] },
+  { title: "پسته بادامی", href: "https://noon-valqalam.ir/product-category/nuts/nut/pistachios/pistachio-badami/", keywords: ["پسته بادامی"] },
+  { title: "پودر سوخاری", href: "https://noon-valqalam.ir/product-category/hypermarket/breadcrumbs/", keywords: ["پودر سوخاری"] },
+  { title: "آرایش صورت", href: "https://noon-valqalam.ir/product-category/cosmetics/makeup-cosmetics-2/face-makeup/", keywords: ["آرایش صورت", "کرم پودر", "پنکک", "کانسیلر"] },
+  { title: "آرایش ناخن", href: "https://noon-valqalam.ir/product-category/cosmetics/makeup-cosmetics-2/nail/", keywords: ["آرایش ناخن"] },
+  { title: "بادام هندی", href: "https://noon-valqalam.ir/product-category/nuts/nut/cashew/", keywords: ["بادام هندی"] },
+  { title: "بادی اسپلش", href: "https://noon-valqalam.ir/product-category/cosmetics/perfume/bod-splash/", keywords: ["بادی اسپلش", "body splash"] },
+  { title: "بدن و حمام", href: "https://noon-valqalam.ir/product-category//deodorant-spray/body-bath/", keywords: ["بدن و حمام"] },
+  { title: "روغن زیتون", href: "https://noon-valqalam.ir/product-category/hypermarket/olive-oil/", keywords: ["روغن زیتون"] },
+  { title: "لوسیون بدن", href: "https://noon-valqalam.ir/product-category/%d9%84%d9%88%d8%b3%db%8c%d9%88%d9%86-%d8%a8%d8%af%d9%86/", keywords: ["لوسیون بدن", "body lotion", "lotion body"] },
+  { title: "مراقبت بدن", href: "https://noon-valqalam.ir/product-category/skincare/body-care/", keywords: ["مراقبت بدن", "بدن", "body care", "body"] },
+  { title: "هایپرمارکت", href: "https://noon-valqalam.ir/product-category/hypermarket/", keywords: ["هایپرمارکت"] },
+  { title: "وسایل برقی", href: "https://noon-valqalam.ir/product-category/%d9%88%d8%b3%d8%a7%db%8c%d9%84-%d8%a8%d8%b1%d9%82%db%8c/", keywords: ["وسایل برقی"] },
+  { title: "ویفر شکلات", href: "https://noon-valqalam.ir/product-category/hypermarket/%d9%88%db%8c%d9%81%d8%b1-%d8%b4%da%a9%d9%84%d8%a7%d8%aa/", keywords: ["ویفر شکلات", "ویفر"] },
+  { title: "پسته اکبری", href: "https://noon-valqalam.ir/product-category/nuts/nut/pistachios/pistachio-akbari/", keywords: ["پسته اکبری"] },
+  { title: "پودر شکلات", href: "https://noon-valqalam.ir/product-category/hypermarket/%d9%be%d9%88%d8%af%d8%b1-%d8%b4%da%a9%d9%84%d8%a7%d8%aa/", keywords: ["پودر شکلات"] },
+  { title: "کرم خوراکی", href: "https://noon-valqalam.ir/product-category/hypermarket/edible-cream/", keywords: ["کرم خوراکی"] },
+  { title: "کرم کارامل", href: "https://noon-valqalam.ir/product-category/%da%a9%d8%b1%d9%85-%da%a9%d8%a7%d8%b1%d8%a7%d9%85%d9%84/", keywords: ["کرم کارامل"] },
+  { title: "اسپری بدن", href: "https://noon-valqalam.ir/product-category/cosmetics/perfume/body-spray/", keywords: ["اسپری بدن"] },
+  { title: "اسکراب مو", href: "https://noon-valqalam.ir/product-category/%d8%a7%d8%b3%da%a9%d8%b1%d8%a7%d8%a8-%d9%85%d9%88/", keywords: ["اسکراب مو"] },
+  { title: "انجیر خشک", href: "https://noon-valqalam.ir/product-category/nuts/dried-fruits/fig/", keywords: ["انجیر خشک"] },
+  { title: "تراول ماگ", href: "https://noon-valqalam.ir/product-category/%d8%aa%d8%b1%d8%a7%d9%88%d9%84-%d9%85%d8%a7%da%af/", keywords: ["تراول ماگ"] },
+  { title: "جو و ماجی", href: "https://noon-valqalam.ir/product-category/hypermarket/jo-and-maji/", keywords: ["جو و ماجی"] },
+  { title: "زیبایی مو", href: "https://noon-valqalam.ir/product-category/cosmetics/hair/hair-makeup/", keywords: ["زیبایی مو"] },
+  { title: "قهوه فوری", href: "https://noon-valqalam.ir/product-category/hypermarket/instant-coffee/", keywords: ["قهوه فوری", "نسکافه فوری", "instant coffee", "nescafe", "کافی میت", "کافی مت", "کافی mate", "coffee mate", "creamer"] },
+  { title: "مراقبت لب", href: "https://noon-valqalam.ir/product-category/skincare/lip-care/", keywords: ["مراقبت لب", "لب", "بالم لب", "lip"] },
+  { title: "مراقبت پا", href: "https://noon-valqalam.ir/product-category/skincare/feet-care/", keywords: ["مراقبت پا"] },
+  { title: "هات چاکلت", href: "https://noon-valqalam.ir/product-category/%d9%87%d8%a7%d8%aa-%da%86%d8%a7%da%a9%d9%84%d8%aa/", keywords: ["هات چاکلت", "hot chocolate"] },
+  { title: "پودر شربت", href: "https://noon-valqalam.ir/product-category/hypermarket/syrup-powder/", keywords: ["پودر شربت"] },
+  { title: "آرایش لب", href: "https://noon-valqalam.ir/product-category/cosmetics/makeup-cosmetics-2/lip-makeup/", keywords: ["آرایش لب", "رژ لب", "خط لب"] },
+  { title: "اسمارتیز", href: "https://noon-valqalam.ir/product-category/%d8%a7%d8%b3%d9%85%d8%a7%d8%b1%d8%aa%db%8c%d8%b2/", keywords: ["اسمارتیز"] },
+  { title: "بیسکوویت", href: "https://noon-valqalam.ir/product-category/hypermarket/biscuit/", keywords: ["بیسکوویت", "بیسکویت", "biscuit"] },
+  { title: "ساعت مچی", href: "https://noon-valqalam.ir/product-category/%d8%b3%d8%a7%d8%b9%d8%aa-%d9%85%da%86%db%8c/", keywords: ["ساعت مچی"] },
+  { title: "ضد آفتاب", href: "https://noon-valqalam.ir/product-category/skincare/sunscreen/", keywords: ["ضد آفتاب", "sunscreen"] },
+  { title: "عطر جیبی", href: "https://noon-valqalam.ir/product-category/cosmetics/perfume/pocket-perfume/", keywords: ["عطر جیبی"] },
+  { title: "قالب موج", href: "https://noon-valqalam.ir/product-category/%d9%82%d8%a7%d9%84%d8%a8-%d9%85%d9%88%d8%ac/", keywords: ["قالب موج"] },
+  { title: "قرص قهوه", href: "https://noon-valqalam.ir/product-category/%d9%82%d8%b1%d8%b5-%d9%82%d9%87%d9%88%d9%87/", keywords: ["قرص قهوه"] },
+  { title: "میوه خشک", href: "https://noon-valqalam.ir/product-category/nuts/%d9%85%db%8c%d9%88%d9%87-%d8%ae%d8%b4%da%a9/", keywords: ["میوه خشک"] },
+  { title: "پودر ژله", href: "https://noon-valqalam.ir/product-category/%d9%be%d9%88%d8%af%d8%b1-%da%98%d9%84%d9%87/", keywords: ["پودر ژله"] },
+  { title: "کافی شاپ", href: "https://noon-valqalam.ir/product-category/cafe/", keywords: ["کافی شاپ"] },
+  { title: "برگه ها", href: "https://noon-valqalam.ir/product-category/nuts/dried-fruits/appricot/", keywords: ["برگه ها"] },
+  { title: "سبزیجات", href: "https://noon-valqalam.ir/product-category/nuts/dried-herbs/", keywords: ["سبزیجات"] },
+  { title: "شیر خشک", href: "https://noon-valqalam.ir/product-category/%d8%b4%db%8c%d8%b1-%d8%ae%d8%b4%da%a9/", keywords: ["شیر خشک"] },
+  { title: "عرقیجات", href: "https://noon-valqalam.ir/product-category/%d8%b9%d8%b1%d9%82%db%8c%d8%ac%d8%a7%d8%aa/", keywords: ["عرقیجات"] },
+  { title: "نوشیدنی", href: "https://noon-valqalam.ir/shop/", keywords: ["نوشیدنی", "آب زمزم", "زمزم", "آب معدنی", "آب آشامیدنی", "نوشابه", "آبمیوه", "water", "zamzam", "drink", "beverage"] },
+  { title: "پسته ها", href: "https://noon-valqalam.ir/product-category/nuts/nut/pistachios/", keywords: ["پسته ها"] },
+  { title: "چای کرک", href: "https://noon-valqalam.ir/product-category/%da%86%d8%a7%db%8c-%da%a9%d8%b1%da%a9/", keywords: ["چای کرک", "karak"] },
+  { title: "کرم دست", href: "https://noon-valqalam.ir/product-category/%da%a9%d8%b1%d9%85-%d8%af%d8%b3%d8%aa/", keywords: ["کرم دست", "hand cream"] },
+  { title: "آبنبات", href: "https://noon-valqalam.ir/product-category/%d8%a2%d8%a8%d9%86%d8%a8%d8%a7%d8%aa/", keywords: ["آبنبات", "candy"] },
+  { title: "آرایشی", href: "https://noon-valqalam.ir/product-category/cosmetics/makeup-cosmetics-2/", keywords: ["آرایشی"] },
+  { title: "تنقلات", href: "https://noon-valqalam.ir/product-category/snacks/", keywords: ["تنقلات"] },
+  { title: "حبوبات", href: "https://noon-valqalam.ir/product-category/nuts/%d8%ad%d8%a8%d9%88%d8%a8%d8%a7%d8%aa/", keywords: ["حبوبات"] },
+  { title: "خشکبار", href: "https://noon-valqalam.ir/product-category/nuts/dried-fruits/", keywords: ["خشکبار", "میوه خشک", "dried"] },
+  { title: "زعفران", href: "https://noon-valqalam.ir/product-category/saffron/", keywords: ["زعفران", "saffron"] },
+  { title: "سوغاتی", href: "https://noon-valqalam.ir/product-category/hypermarket/souvenir/", keywords: ["سوغاتی"] },
+  { title: "شوینده", href: "https://noon-valqalam.ir/product-category/hypermarket/detergent/", keywords: ["شوینده", "detergent"] },
+  { title: "شیرینی", href: "https://noon-valqalam.ir/product-category/sweets/", keywords: ["شیرینی"] },
+  { title: "لوسیون", href: "https://noon-valqalam.ir/product-category/%d9%84%d9%88%d8%b3%db%8c%d9%88%d9%86/", keywords: ["لوسیون", "lotion"] },
+  { title: "نسکافه", href: "https://noon-valqalam.ir/product-category/%d9%86%d8%b3%da%a9%d8%a7%d9%81%d9%87/", keywords: ["نسکافه", "nescafe"] },
+  { title: "کادویی", href: "https://noon-valqalam.ir/product-category/%da%a9%d8%a7%d8%af%d9%88%db%8c%db%8c/", keywords: ["کادویی"] },
+  { title: "آدامس", href: "https://noon-valqalam.ir/product-category/hypermarket/gum/", keywords: ["آدامس", "gum"] },
+  { title: "ادویه", href: "https://noon-valqalam.ir/product-category/nuts/spices/", keywords: ["ادویه"] },
+  { title: "بادام", href: "https://noon-valqalam.ir/product-category/nuts/almond/", keywords: ["بادام"] },
+  { title: "دمنوش", href: "https://noon-valqalam.ir/product-category/%d8%af%d9%85%d9%86%d9%88%d8%b4/", keywords: ["دمنوش", "herbal tea"] },
+  { title: "رمضان", href: "https://noon-valqalam.ir/product-category/%d8%b1%d9%85%d8%b6%d8%a7%d9%86/", keywords: ["رمضان"] },
+  { title: "زیتون", href: "https://noon-valqalam.ir/product-category/%d8%b2%db%8c%d8%aa%d9%88%d9%86/", keywords: ["زیتون"] },
+  { title: "سرلاک", href: "https://noon-valqalam.ir/product-category/%d8%b3%d8%b1%d9%84%d8%a7%da%a9/", keywords: ["سرلاک"] },
+  { title: "سوهان", href: "https://noon-valqalam.ir/product-category/%d8%b3%d9%88%d9%87%d8%a7%d9%86/", keywords: ["سوهان"] },
+  { title: "سیروپ", href: "https://noon-valqalam.ir/product-category/hypermarket/syrup/", keywords: ["سیروپ"] },
+  { title: "شامپو", href: "https://noon-valqalam.ir/product-category/cosmetics/hair/shampoo/", keywords: ["شامپو", "shampoo"] },
+  { title: "شکلات", href: "https://noon-valqalam.ir/product-category/hypermarket/chocolate/", keywords: ["شکلات", "chocolate"] },
+  { title: "ضدجوش", href: "https://noon-valqalam.ir/product-category/%d8%b6%d8%af%d8%ac%d9%88%d8%b4/", keywords: ["ضدجوش"] },
+  { title: "قنادی", href: "https://noon-valqalam.ir/product-category/%d9%82%d9%86%d8%a7%d8%af%db%8c/", keywords: ["قنادی"] },
+  { title: "وانیل", href: "https://noon-valqalam.ir/product-category/%d9%88%d8%a7%d9%86%db%8c%d9%84/", keywords: ["وانیل"] },
+  { title: "کمپوت", href: "https://noon-valqalam.ir/product-category/hypermarket/compote/", keywords: ["کمپوت"] },
+  { title: "آجیل", href: "https://noon-valqalam.ir/product-category/nuts/nut/", keywords: ["آجیل", "مغز", "nut", "nuts"] },
+  { title: "ارده", href: "https://noon-valqalam.ir/product-category/nuts/%d8%a7%d8%b1%d8%af%d9%87/", keywords: ["ارده"] },
+  { title: "برنج", href: "https://noon-valqalam.ir/product-category/nuts/%d8%a8%d8%b1%d9%86%d8%ac/", keywords: ["برنج"] },
+  { title: "تخمه", href: "https://noon-valqalam.ir/product-category/nuts/%d8%aa%d8%ae%d9%85%d9%87/", keywords: ["تخمه"] },
+  { title: "حلوا", href: "https://noon-valqalam.ir/product-category/%d8%ad%d9%84%d9%88%d8%a7/", keywords: ["حلوا"] },
+  { title: "خرما", href: "https://noon-valqalam.ir/product-category/nuts/dried-fruits/dates/", keywords: ["خرما"] },
+  { title: "روغن", href: "https://noon-valqalam.ir/product-category/hypermarket/oil/", keywords: ["روغن"] },
+  { title: "زرشک", href: "https://noon-valqalam.ir/product-category/nuts/%d8%b2%d8%b1%d8%b4%da%a9/", keywords: ["زرشک"] },
+  { title: "شربت", href: "https://noon-valqalam.ir/product-category/%d8%b4%d8%b1%d8%a8%d8%aa/", keywords: ["شربت", "syrup"] },
+  { title: "شلات", href: "https://noon-valqalam.ir/product-category/%d8%b4%d9%84%d8%a7%d8%aa/", keywords: ["شلات"] },
+  { title: "فندق", href: "https://noon-valqalam.ir/product-category/nuts/%d9%81%d9%86%d8%af%d9%82/", keywords: ["فندق"] },
+  { title: "قهوه", href: "https://noon-valqalam.ir/product-category/coffee/", keywords: ["قهوه", "اسپرسو", "کاپوچینو", "لاته", "coffee", "nescafe", "کافی"] },
+  { title: "میوه", href: "https://noon-valqalam.ir/product-category/%d9%85%db%8c%d9%88%d9%87/", keywords: ["میوه"] },
+  { title: "نبات", href: "https://noon-valqalam.ir/product-category/nuts/%d9%86%d8%a8%d8%a7%d8%aa/", keywords: ["نبات"] },
+  { title: "نخود", href: "https://noon-valqalam.ir/product-category/nuts/%d9%86%d8%ae%d9%88%d8%af/", keywords: ["نخود"] },
+  { title: "نودل", href: "https://noon-valqalam.ir/product-category/hypermarket/noodles/", keywords: ["نودل", "noodle", "noodles"] },
+  { title: "پنیر", href: "https://noon-valqalam.ir/product-category/hypermarket/cheese/", keywords: ["پنیر", "cheese"] },
+  { title: "چیپس", href: "https://noon-valqalam.ir/product-category/snacks/chips/", keywords: ["چیپس", "chips"] },
+  { title: "کشمش", href: "https://noon-valqalam.ir/product-category/nuts/dried-fruits/%da%a9%d8%b4%d9%85%d8%b4/", keywords: ["کشمش"] },
+  { title: "کنجد", href: "https://noon-valqalam.ir/product-category/nuts/%da%a9%d9%86%d8%ac%d8%af/", keywords: ["کنجد"] },
+  { title: "گردو", href: "https://noon-valqalam.ir/product-category/nuts/%da%af%d8%b1%d8%af%d9%88/", keywords: ["گردو"] },
+  { title: "توت", href: "https://noon-valqalam.ir/product-category/nuts/dried-fruits/berry/", keywords: ["توت"] },
+  { title: "دسر", href: "https://noon-valqalam.ir/product-category/%d8%af%d8%b3%d8%b1/", keywords: ["دسر"] },
+  { title: "قند", href: "https://noon-valqalam.ir/product-category/nuts/%d9%82%d9%86%d8%af/", keywords: ["قند"] },
+  { title: "چای", href: "https://noon-valqalam.ir/product-category/%da%86%d8%a7%db%8c-2/", keywords: ["چای", "tea"] },
+  { title: "ژله", href: "https://noon-valqalam.ir/product-category/%da%98%d9%84%d9%87/", keywords: ["ژله"] },
+  { title: "کشک", href: "https://noon-valqalam.ir/product-category/nuts/%da%a9%d8%b4%da%a9/", keywords: ["کشک"] },
+  { title: "جو", href: "https://noon-valqalam.ir/product-category/nuts/%d8%ac%d9%88/", keywords: ["جو"] },
+  { title: "سس", href: "https://noon-valqalam.ir/product-category/hypermarket/sauce/", keywords: ["سس"] },
+  { title: "هل", href: "https://noon-valqalam.ir/product-category/nuts/%d9%87%d9%84/", keywords: ["هل"] },
+  { title: "گز", href: "https://noon-valqalam.ir/product-category/%da%af%d8%b2/", keywords: ["گز"] },
+];
+
+function normalizeCategoryMatchText(input: string): string {
+  return String(input || '')
+    .toLowerCase()
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/\u200c/g, ' ')
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function chooseBestInternalCategory(
+  rawProductName: string,
+  data: ProductData,
+  isNutsOrDriedFruit: boolean,
+): { title: string; href: string } {
+  const text = normalizeCategoryMatchText([
+    rawProductName,
+    data.correctedProductName,
+    data.focusKeyword,
+    data.englishProductName,
+    data.shortDescription,
+    data.metaDescription,
+    ...(data.advancedSeoAnalysis?.keyphraseSynonyms || []),
+    ...(data.advancedSeoAnalysis?.lsiKeywords || []),
+    ...(data.advancedSeoAnalysis?.semanticEntities || []),
+  ].filter(Boolean).join(' '));
+
+  const has = (patterns: RegExp[]) => patterns.some((pattern) => pattern.test(text));
+  const byTitle = (title: string) => SITE_CATEGORIES.find((cat) => cat.title === title);
+
+  const priorityRules: Array<{ patterns: RegExp[]; title: string }> = [
+    { patterns: [/آب\s*زمزم|زمزم|آب\s*معدنی|آب\s*آشامیدنی|نوشیدنی|water|zamzam|drink|beverage/], title: 'نوشیدنی' },
+    { patterns: [/کافی\s*میت|کافی\s*مت|قهوه\s*فوری|نسکافه|instant\s*coffee|coffee\s*mate|creamer|nescafe/], title: 'قهوه فوری' },
+    { patterns: [/هات\s*چاکلت|hot\s*chocolate/], title: 'هات چاکلت' },
+    { patterns: [/قهوه|اسپرسو|کاپوچینو|لاته|coffee/], title: 'قهوه' },
+    { patterns: [/لوسیون\s*بدن|body\s*lotion/], title: 'لوسیون بدن' },
+    { patterns: [/لوسیون|lotion/], title: 'لوسیون' },
+    { patterns: [/شامپو|shampoo/], title: 'شامپو' },
+    { patterns: [/ماسک\s*مو|سرم\s*مو|نرم.?کننده\s*مو|مراقبت\s*مو|hair/], title: 'مراقبت و زیبایی مو' },
+    { patterns: [/کرم\s*دست|hand\s*cream/], title: 'کرم دست' },
+    { patterns: [/ضد\s*آفتاب|sunscreen/], title: 'ضد آفتاب' },
+    { patterns: [/آبرسان|مرطوب.?کننده|سرم\s*پوست|کرم\s*صورت|مراقبت\s*پوست|skin|serum/], title: 'مراقبت پوست' },
+    { patterns: [/خمیر\s*دندان|مسواک|دهان|دندان|tooth|oral/], title: 'بهداشت دهان و دندان' },
+    { patterns: [/دئودرانت|ضد\s*تعریق|deodorant/], title: 'دئودرانت و ضد تعریق' },
+    { patterns: [/عطر|ادکلن|perfume|fragrance/], title: 'عطر و ادکلن' },
+    { patterns: [/شوینده|لباسشویی|ظرفشویی|پاک.?کننده|جرم.?گیر|detergent|cleaner/], title: 'مواد شوینده' },
+    { patterns: [/زعفران|saffron/], title: 'زعفران' },
+    { patterns: [/پسته\s*اکبری/], title: 'پسته اکبری' },
+    { patterns: [/پسته\s*احمد/], title: 'پسته احمد آقایی' },
+    { patterns: [/پسته\s*کله/], title: 'پسته کله قوچی' },
+    { patterns: [/پسته|مغز\s*پسته/], title: 'پسته ها' },
+    { patterns: [/بادام\s*هندی|cashew/], title: 'بادام هندی' },
+    { patterns: [/بادام\s*زمینی|peanut/], title: 'بادام زمینی' },
+    { patterns: [/بادام|almond/], title: 'بادام' },
+    { patterns: [/گردو|walnut/], title: 'گردو' },
+    { patterns: [/فندق|hazelnut/], title: 'فندق' },
+    { patterns: [/خرما|date/], title: 'خرما' },
+    { patterns: [/انجیر|fig/], title: 'انجیر خشک' },
+    { patterns: [/کشمش|raisin/], title: 'کشمش' },
+    { patterns: [/میوه\s*خشک|dried\s*fruit/], title: 'میوه خشک' },
+    { patterns: [/آجیل|nut|nuts/], title: isNutsOrDriedFruit ? 'آجیل' : 'خشکبار و آجیل' },
+    { patterns: [/چای\s*کرک|karak/], title: 'چای کرک' },
+    { patterns: [/چای|tea/], title: 'چای' },
+    { patterns: [/نودل|noodle/], title: 'نودل' },
+    { patterns: [/پنیر|cheese/], title: 'پنیر' },
+    { patterns: [/شکلات|chocolate/], title: 'شکلات' },
+    { patterns: [/بیسکویت|بیسکوویت|biscuit/], title: 'بیسکوویت' },
+    { patterns: [/ویفر/], title: 'ویفر شکلات' },
+    { patterns: [/چیپس|chips/], title: 'چیپس' },
+    { patterns: [/سس|sauce/], title: 'سس' },
+    { patterns: [/قند/], title: 'قند' },
+    { patterns: [/نبات/], title: 'نبات' },
+    { patterns: [/سوهان/], title: 'سوهان' },
+    { patterns: [/گز/], title: 'گز' },
+  ];
+
+  for (const rule of priorityRules) {
+    if (has(rule.patterns)) {
+      const found = byTitle(rule.title);
+      if (found) return found;
+    }
+  }
+
+  let best: { title: string; href: string; score: number } | null = null;
+  for (const cat of SITE_CATEGORIES) {
+    let score = 0;
+    for (const keyword of cat.keywords) {
+      const key = normalizeCategoryMatchText(keyword);
+      if (!key) continue;
+      if (text.includes(key)) score += Math.max(3, key.length);
+    }
+    if (score > 0 && (!best || score > best.score)) {
+      best = { title: cat.title, href: cat.href, score };
+    }
+  }
+
+  if (best) return { title: best.title, href: best.href };
+
+  return byTitle('هایپرمارکت') || {
+    title: 'هایپرمارکت',
+    href: 'https://noon-valqalam.ir/product-category/hypermarket/',
+  };
+}
+
 function getNaturalInlineLinkSentence(
   rawProductName: string,
   data: ProductData,
   isNutsOrDriedFruit: boolean,
 ): string {
-  const text = [
-    rawProductName,
-    data.correctedProductName,
-    data.focusKeyword,
-    data.englishProductName,
-    ...(data.advancedSeoAnalysis?.semanticEntities || []),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  const has = (patterns: RegExp[]) => patterns.some((pattern) => pattern.test(text));
-
-  if (isNutsOrDriedFruit || has([/آجیل|خشکبار|پسته|بادام|گردو|فندق|کشمش|خرما|انجیر|توت خشک|مویز|تخمه|cashew|pistachio|almond|walnut|date/])) {
-    return 'اگر قصد خرید چند محصول پذیرایی دارید، بخش <a href="#">آجیل و خشکبار</a> می‌تواند گزینه‌های مکمل مناسبی را پیش روی شما بگذارد.';
-  }
-
-  if (has([/کافی\s*میت|coffee\s*mate|creamer|پودر خامه|قهوه|کافی|نسکافه|کاپوچینو|coffee|nescafe/])) {
-    return 'اگر در کنار این محصول به نوشیدنی‌های گرم یا مکمل‌های کافی‌شاپی نیاز دارید، بخش <a href="#">انواع قهوه</a> می‌تواند گزینه‌های مرتبط‌تری نشان دهد.';
-  }
-
-  if (has([/شامپو|ماسک مو|نرم.?کننده مو|سرم مو|تقویت مو|مو\b|hair|shampoo|clear|کلیر|هد اند شولدرز|head\s*&?\s*shoulders|pantene|پنتن/])) {
-    return 'برای کامل‌تر شدن روتین مراقبت مو، می‌توانید محصولات مرتبط در بخش <a href="#">مراقبت و زیبایی مو</a> را هم بررسی کنید.';
-  }
-
-  if (has([/خمیر دندان|مسواک|دهان|دندان|نخ دندان|دهانشویه|tooth|toothpaste|oral|mouth/])) {
-    return 'برای تکمیل مراقبت روزانه دهان، محصولات بخش <a href="#">بهداشت دهان و دندان</a> انتخاب‌های مرتبط‌تری در اختیار شما می‌گذارند.';
-  }
-
-  if (has([/آب\s*زمزم|زمزم|آب\s*معدنی|آب\s*آشامیدنی|نوشیدنی|water|zamzam|drink|beverage/])) {
-    return 'برای تکمیل خرید خوراکی و نوشیدنی، می‌توانید بخش <a href="#">مواد غذایی و نوشیدنی</a> را هم بررسی کنید.';
-  }
-
-  if (has([/کرم|لوسیون|ضد آفتاب|آبرسان|مرطوب.?کننده|پوست|آرایشی|بهداشتی|ریمل|رژ|پنکک|کازمتیک|cosmetic|cream|lotion|sunscreen|skin/])) {
-    return 'اگر به دنبال محصولات مکمل هستید، دسته <a href="#">لوازم آرایشی و بهداشتی</a> گزینه‌های مرتبط بیشتری دارد.';
-  }
-
-  if (has([/پاد لباسشویی|مایع لباسشویی|پودر لباسشویی|نرم کننده لباس|مایع ظرفشویی|قرص ظرفشویی|جرم.?گیر|شوینده|پاک.?کننده|لباسشویی|ظرفشویی|detergent|cleaner|dishwasher/])) {
-    return 'برای خرید کامل‌تر محصولات نظافت منزل، بخش <a href="#">مواد شوینده</a> گزینه‌های مرتبط دیگری هم دارد.';
-  }
-
-  if (has([/موبایل|گوشی|آیفون|iphone|samsung|سامسونگ|شیائومی|xiaomi|لپ.?تاپ|تبلت|هدفون|هندزفری|شارژر|دیجیتال|galaxy|airpods/])) {
-    return 'اگر به لوازم جانبی یا محصولات مشابه نیاز دارید، بخش <a href="#">کالای دیجیتال</a> می‌تواند انتخاب‌های مرتبط‌تری ارائه دهد.';
-  }
-
-  if (has([/برنج|روغن|چای|نوشیدنی|شکلات|بیسکویت|خوراکی|غذایی|رب|تن ماهی|ماکارونی|زعفران|rice|tea|food/])) {
-    return 'برای تکمیل سبد خرید روزانه، بخش <a href="#">هایپرمارکت و مواد غذایی</a> محصولات مرتبط بیشتری دارد.';
-  }
-
-  return 'برای مقایسه و انتخاب بهتر، می‌توانید گزینه‌های مشابه در بخش <a href="#">محصولات مرتبط</a> را هم ببینید.';
+  const category = chooseBestInternalCategory(rawProductName, data, isNutsOrDriedFruit);
+  return `برای مشاهده محصولات مرتبط، دسته <a href="${category.href}">${category.title}</a> می‌تواند انتخاب‌های نزدیک‌تری به این محصول نشان دهد.`;
 }
 
 function injectNaturalInlineInternalLink(html: string, sentence: string): string {
@@ -1008,75 +1230,10 @@ function getManualInternalLinkAdvice(
   data: ProductData,
   isNutsOrDriedFruit: boolean,
 ): { target: string; anchor: string } {
-  const text = [
-    rawProductName,
-    data.correctedProductName,
-    data.focusKeyword,
-    data.englishProductName,
-    ...(data.advancedSeoAnalysis?.semanticEntities || []),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  const has = (patterns: RegExp[]) => patterns.some((pattern) => pattern.test(text));
-
-  if (isNutsOrDriedFruit || has([/آجیل|خشکبار|پسته|بادام|گردو|فندق|کشمش|خرما|انجیر|توت خشک|مویز|تخمه|cashew|pistachio|almond|walnut|date/])) {
-    return {
-      target: 'دسته‌بندی آجیل و خشکبار، یا دسته دقیق همان محصول مثل پسته، بادام، گردو یا خرما',
-      anchor: data.focusKeyword || data.correctedProductName || 'خرید آجیل و خشکبار',
-    };
-  }
-
-  if (has([/شامپو|ماسک مو|نرم.?کننده مو|سرم مو|تقویت مو|مو\b|hair|shampoo|clear|کلیر|هد اند شولدرز|head\s*&?\s*shoulders|pantene|پنتن/])) {
-    return {
-      target: 'دسته‌بندی شامپو؛ اگر نبود، دسته‌بندی مراقبت و زیبایی مو؛ اگر برند در سایت هست، صفحه یا جستجوی برند',
-      anchor: data.focusKeyword || data.correctedProductName || 'خرید شامپو',
-    };
-  }
-
-  if (has([/خمیر دندان|مسواک|دهان|دندان|نخ دندان|دهانشویه|tooth|toothpaste|oral|mouth/])) {
-    return {
-      target: 'دسته‌بندی بهداشت دهان و دندان؛ اگر نبود، دسته‌بندی مادر لوازم آرایشی و بهداشتی',
-      anchor: data.focusKeyword || data.correctedProductName || 'خرید محصولات بهداشت دهان و دندان',
-    };
-  }
-
-  if (has([/آب\s*زمزم|زمزم|آب\s*معدنی|آب\s*آشامیدنی|نوشیدنی|water|zamzam|drink|beverage/])) {
-    return 'برای تکمیل خرید خوراکی و نوشیدنی، می‌توانید بخش <a href="#">مواد غذایی و نوشیدنی</a> را هم بررسی کنید.';
-  }
-
-  if (has([/کرم|لوسیون|ضد آفتاب|آبرسان|مرطوب.?کننده|پوست|آرایشی|بهداشتی|ریمل|رژ|پنکک|کازمتیک|cosmetic|cream|lotion|sunscreen|skin/])) {
-    return {
-      target: 'دسته‌بندی دقیق محصول در لوازم آرایشی و بهداشتی؛ اگر نبود، دسته‌بندی مادر لوازم آرایشی و بهداشتی',
-      anchor: data.focusKeyword || data.correctedProductName || 'خرید لوازم آرایشی و بهداشتی',
-    };
-  }
-
-  if (has([/پاد لباسشویی|مایع لباسشویی|پودر لباسشویی|نرم کننده لباس|مایع ظرفشویی|قرص ظرفشویی|جرم.?گیر|شوینده|پاک.?کننده|لباسشویی|ظرفشویی|detergent|cleaner|dishwasher/])) {
-    return {
-      target: 'دسته‌بندی مواد شوینده یا دسته دقیق محصول مثل شوینده لباس، ظرفشویی یا پاک‌کننده سطوح',
-      anchor: data.focusKeyword || data.correctedProductName || 'خرید مواد شوینده',
-    };
-  }
-
-  if (has([/موبایل|گوشی|آیفون|iphone|samsung|سامسونگ|شیائومی|xiaomi|لپ.?تاپ|تبلت|هدفون|هندزفری|شارژر|دیجیتال|galaxy|airpods/])) {
-    return {
-      target: 'دسته‌بندی موبایل و کالای دیجیتال، یا صفحه برند/مدل مرتبط در سایت',
-      anchor: data.focusKeyword || data.correctedProductName || 'خرید کالای دیجیتال',
-    };
-  }
-
-  if (has([/برنج|روغن|چای|قهوه|نوشیدنی|شکلات|بیسکویت|خوراکی|غذایی|رب|تن ماهی|ماکارونی|زعفران|rice|tea|coffee|food/])) {
-    return {
-      target: 'دسته‌بندی خوراکی و هایپرمارکت، یا دسته دقیق‌تر همان محصول',
-      anchor: data.focusKeyword || data.correctedProductName || 'خرید محصولات خوراکی',
-    };
-  }
-
+  const category = chooseBestInternalCategory(rawProductName, data, isNutsOrDriedFruit);
   return {
-    target: 'دسته‌بندی اصلی همین محصول؛ اگر دسته دقیق وجود ندارد، دسته مادر مرتبط یا صفحه جستجوی برند/مدل در سایت',
-    anchor: data.focusKeyword || data.correctedProductName || 'مشاهده محصولات مرتبط',
+    target: `${category.title} — ${category.href}`,
+    anchor: data.focusKeyword || data.correctedProductName || category.title,
   };
 }
 
@@ -1116,7 +1273,7 @@ function addManualInternalLinkMarkerToProductData(
 
 function improvePersianNaturalness(text: string): string {
   return String(text || '')
-    .replace(/همچنین\s*برای\s*تجربه[^.؟<]*(?:،|,)\s*می‌توانید\s*آن\s*را\s*همراه\s*با\s*(<a href="#">[^<]+<\/a>|[^.؟]+)\s*استفاده\s*کنید\.?/g,
+    .replace(/همچنین\s*برای\s*تجربه[^.؟<]*(?:،|,)\s*می‌توانید\s*آن\s*را\s*همراه\s*با\s*(<a href="https://noon-valqalam.ir/product-category/hypermarket/">[^<]+<\/a>|[^.؟]+)\s*استفاده\s*کنید\.?/g,
       'همچنین این محصول برای آماده‌سازی نوشیدنی‌های گرم روزانه کاربرد دارد.')
     .replace(/برای\s*تجربه\s*طعم‌های\s*متنوع‌تر[^.؟]*\.?/g, '')
     .replace(/قطعاً\s*از\s*طعم\s*بی‌نظیر\s*آن\s*لذت\s*خواهید\s*برد\.?/g, 'این محصول می‌تواند طعم نوشیدنی را نرم‌تر و دلپذیرتر کند.')
@@ -1841,53 +1998,57 @@ function ensureMohannadFullDescriptionDepth(
 
 function sanitizeCountryFieldsInDescription(html: string): string {
   let output = String(html || '');
-  const seriesCountryText = 'بستگی به سری ساخت دارد';
-  const seriesCountryItem = `<li>کشور سازنده: ${seriesCountryText}</li>`;
+  const seriesCountryItem = '<li>کشور سازنده: بستگی به سری ساخت دارد</li>';
 
-  // Never show country of brand origin. User wants only "کشور سازنده".
+  // Do not show "country of brand origin"; user wants real product origin if known.
   output = output.replace(
     /<li>\s*کشور\s*مب[ددا][أا]?\s*برند\s*[:：][\s\S]*?<\/li>/gi,
     ''
   );
 
-  // Remove generic origin country labels to avoid duplicated/contradictory country fields.
+  // If country fields leaked prompt/instruction/unknown values, convert to the safe batch phrase.
   output = output.replace(
-    /<li>\s*کشور\s*مب[ددا][أا]?\s*[:：][\s\S]*?<\/li>/gi,
-    ''
-  );
-  output = output.replace(
-    /<li>\s*مب[ددا][أا]?\s*تولید\s*[:：][\s\S]*?<\/li>/gi,
-    ''
-  );
-
-  // If the model leaked instruction text or unknown values, replace with the exact user-approved phrase.
-  output = output.replace(
-    /<li>\s*کشور\s*سازنده\s*[:：]\s*(?:اگر\s*مشخص\s*است|اگر\s*قطعی\s*و\s*مشخص\s*است|فقط\s*اگر\s*قطعی\s*و\s*مشخص\s*است|اگر\s*کشور\s*واقعی\s*مشخص\s*است[\s\S]*?|نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
+    /<li>\s*(?:کشور\s*مب[ددا][أا]?|کشور\s*سازنده|مب[ددا][أا]?\s*تولید)\s*[:：]\s*(?:اگر\s*مشخص\s*است|اگر\s*قطعی\s*و\s*مشخص\s*است|فقط\s*اگر\s*قطعی\s*و\s*مشخص\s*است|اگر\s*کشور\s*واقعی\s*مشخص\s*است[\s\S]*?|نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
     seriesCountryItem
   );
 
-  // Remove other unknown values in specs; country has its special series/build fallback.
+  // Remove other unknown values in specs.
   output = output.replace(
-    /<li>\s*(?!کشور\s*سازنده\s*[:：])[^<:：]*[:：]\s*(?:اگر\s*مشخص\s*است|نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
+    /<li>\s*(?!(?:کشور\s*مب[ددا][أا]?|کشور\s*سازنده)\s*[:：])[^<:：]*[:：]\s*(?:اگر\s*مشخص\s*است|نامشخص|نامعلوم|مشخص\s*نیست|ذکر\s*نشده|ندارد|n\/a|unknown|not\s*specified|null|undefined)\s*<\/li>/gi,
     ''
   );
 
-  // If specs section exists and has no country manufacturer line, add the safe series/build note.
   const specsPattern = /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i;
   output = output.replace(specsPattern, (_match, open, body, close) => {
-    const bodyText = String(body || '');
-    if (/کشور\s*سازنده\s*[:：]/i.test(bodyText)) {
+    let bodyText = String(body || '');
+
+    const hasRealOrigin = /<li>\s*کشور\s*مب[ددا][أا]?\s*[:：]\s*(?!بستگی|نامشخص|نامعلوم|اگر\s*مشخص\s*است)[\s\S]*?<\/li>/i.test(bodyText);
+    const hasManufacturer = /<li>\s*کشور\s*سازنده\s*[:：]\s*[\s\S]*?<\/li>/i.test(bodyText);
+
+    if (hasRealOrigin) {
+      bodyText = bodyText.replace(/<li>\s*کشور\s*سازنده\s*[:：]\s*بستگی\s*به\s*سری\s*ساخت\s*دارد\s*<\/li>/gi, '');
       return `${open}${bodyText}${close}`;
     }
-    return `${open}${bodyText.trimEnd()}\n${seriesCountryItem}\n${close}`;
+
+    if (!hasManufacturer) {
+      bodyText = `${bodyText.trimEnd()}\n${seriesCountryItem}\n`;
+    }
+
+    return `${open}${bodyText}${close}`;
   });
 
-  // Deduplicate country manufacturer list items.
-  let seenCountry = false;
+  let seenOrigin = false;
+  output = output.replace(/<li>\s*کشور\s*مب[ددا][أا]?\s*[:：][\s\S]*?<\/li>/gi, (item) => {
+    if (seenOrigin) return '';
+    seenOrigin = true;
+    return item;
+  });
+
+  let seenManufacturer = false;
   output = output.replace(/<li>\s*کشور\s*سازنده\s*[:：][\s\S]*?<\/li>/gi, (item) => {
-    if (seenCountry) return '';
-    seenCountry = true;
-    // Keep real country if it is not instruction/unknown text; otherwise use series fallback.
+    if (seenOrigin && /بستگی\s*به\s*سری\s*ساخت/.test(item)) return '';
+    if (seenManufacturer) return '';
+    seenManufacturer = true;
     if (/اگر\s*مشخص\s*است|نامشخص|نامعلوم|unknown|not\s*specified|undefined|null/i.test(item)) {
       return seriesCountryItem;
     }
@@ -1895,6 +2056,7 @@ function sanitizeCountryFieldsInDescription(html: string): string {
   });
 
   output = output
+    .replace(/<a\s+href=["']#["']/gi, '<a href="https://noon-valqalam.ir/product-category/hypermarket/"')
     .replace(/<ul>\s*<\/ul>/gi, '')
     .replace(/\n{3,}/g, '\n')
     .replace(/>\s+</g, '><')
