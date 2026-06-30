@@ -660,24 +660,33 @@ function buildUserPrompt(
   webSearchContext: string,
 ) {
   let userPrompt = `اطلاعات محصول برای تولید محتوای وردپرس:\n- نام خام محصول واردشده توسط کاربر: "${productName}"`;
+  userPrompt += `\n\nقانون بسیار مهم تشخیص محصول:
+- correctedProductName باید نام اصلاح‌شده و واقعی محصول باشد، نه تکرار کورکورانه نام خام کاربر.
+- اگر تصویر محصول ارسال شده و متن/لوگو/ظاهر بسته‌بندی با نام خام کاربر فرق دارد، تصویر و متن روی بسته‌بندی منبع اصلی است.
+- نام خام کاربر فقط راهنماست و ممکن است غلط، تستی یا کاملاً نامرتبط باشد.
+- اگر کاربر نام الکی نوشته اما تصویر محصول واضح است، محصول را بر اساس تصویر تشخیص بده و نام را اصلاح کن.
+- مثال: اگر نام خام هر چیزی بود ولی تصویر آب زمزم بود، خروجی باید آب زمزم/نوشیدنی/مواد غذایی باشد، نه آرایشی یا نام خام کاربر.
+- دسته‌بندی، توضیحات، کلیدواژه‌ها و لینک داخلی باید بر اساس محصول واقعیِ تشخیص‌داده‌شده از تصویر/بسته‌بندی باشد.`;
 
   if (briefDescription && briefDescription.trim()) {
     userPrompt += `\n- توضیحات اولیه کاربر: "${briefDescription.trim()}"`;
   }
 
   userPrompt += `\n- دسته خروجی: ${isNutsOrDriedFruit ? 'آجیل یا خشکبار' : 'محصول عمومی/غیرخشکبار'}`;
-  userPrompt += `\n\nوظیفه تو:\n1. نام محصول را اصلاح و کامل کن. correctedProductName باید بهترین نام فروشگاهی فارسی باشد، نه فقط تکرار نام خام کاربر.
-1.1. correctedProductName باید همان محصولی باشد که کاربر نوشته؛ اگر سرچ نتیجه نامرتبط آورد، به سرچ اعتماد نکن و محصول را عوض نکن. اگر کاربر نوشته «پنیر پوک»، نباید آن را به پنیر دیگری، خامه، نوشیدنی یا محصول ساختگی تبدیل کنی؛ فقط همان پنیر/برند/نام را با احتیاط اصلاح کن.\n2. اگر محصول تعداد، وزن، حجم، مدل، برند، سری، رنگ، رایحه یا طعم دارد و از نام/عکس/توضیح مشخص است، آن را به نام و مشخصات اضافه کن.\n3. fullDescription را با قالب پایه بساز و بخش تکمیلی را فقط بر اساس نیاز و نوع همان محصول انتخاب کن؛ تیترهای نامناسب را برای همه محصولات تکرار نکن.\n4. متن باید مخصوص همین محصول باشد و کلی‌گویی بی‌ارزش نداشته باشد.\n5. اگر اطلاعاتی مطمئن نیست، آن را به صورت عدد/مدل قطعی ننویس.
+  userPrompt += `\n\nوظیفه تو:\n1. نام محصول را اصلاح و کامل کن. correctedProductName باید بهترین نام فروشگاهی فارسی و واقعی محصول باشد، نه فقط تکرار نام خام کاربر.
+1.1. اگر تصویر ارسال شده، نام محصول را از تصویر، لوگو، نوشته‌های بسته‌بندی، شکل محصول و کاربرد آن استخراج کن. اگر نام خام کاربر با تصویر تناقض دارد، نام خام را کنار بگذار و محصول واقعی تصویر را بنویس.
+1.2. اگر تصویر ارسال نشده، نام خام کاربر را با احتیاط اصلاح کن و محصول را به مدل یا دسته کاملاً نامرتبط تبدیل نکن.\n2. اگر محصول تعداد، وزن، حجم، مدل، برند، سری، رنگ، رایحه یا طعم دارد و از نام/عکس/توضیح مشخص است، آن را به نام و مشخصات اضافه کن.\n3. fullDescription را با قالب پایه بساز و بخش تکمیلی را فقط بر اساس نیاز و نوع همان محصول انتخاب کن؛ تیترهای نامناسب را برای همه محصولات تکرار نکن.\n4. متن باید مخصوص همین محصول باشد و کلی‌گویی بی‌ارزش نداشته باشد.\n5. اگر اطلاعاتی مطمئن نیست، آن را به صورت عدد/مدل قطعی ننویس.
 6. اگر کاربر فیلدهایی مثل برند، مدل، حجم،  کشور مبدأ، کشور سازنده یا نوع محصول داده، همان‌ها را با همان برچسب در بخش 📦 مشخصات محصول حفظ کن و حذف نکن.`;
 
   if (productImage && imageAttachedForThisModel) {
-    userPrompt += '\n\nتصویر محصول هم ارسال شده است. تصویر را دقیق بخوان: متن روی بسته‌بندی، لوگو، برند، تعداد، وزن/حجم، مدل، رنگ، رایحه/طعم، کاربرد و جزئیات ظاهری را استخراج کن و در نام اصلاح‌شده و مشخصات محصول لحاظ کن.';
+    userPrompt += '\n\nتصویر محصول هم ارسال شده است. تصویر را دقیق بخوان: متن روی بسته‌بندی، لوگو، برند، تعداد، وزن/حجم، مدل، رنگ، رایحه/طعم، کاربرد و جزئیات ظاهری را استخراج کن و در نام اصلاح‌شده و مشخصات محصول لحاظ کن. اگر نام خام کاربر با تصویر فرق داشت، تصویر را منبع معتبرتر بدان و نام محصول را بر اساس تصویر اصلاح کن.';
   } else if (productImage) {
     userPrompt += '\n\nکاربر تصویر ارسال کرده، اما این مدل fallback متنی است و تصویر را نمی‌بیند. بنابراین فقط بر اساس نام و توضیحات اولیه بهترین خروجی سئویی را بساز و جزئیات نامطمئن تصویر را اختراع نکن.';
   }
 
   if (webSearchContext && webSearchContext.trim()) {
-    userPrompt += `\n\n# اطلاعات تازه از جستجوی وب\n${webSearchContext.trim()}\n\nقانون استفاده از سرچ وب:\n- این اطلاعات را برای مدل‌ها/نسخه‌های جدید، مشخصات محصول و اصلاح نام، از دانش داخلی خودت معتبرتر بدان.\n- اگر نام خام محصول جدید است، آن را به محصول قدیمی‌تر تغییر نده. مثال: اگر کاربر «ایفون 17» نوشته، آن را به «ایفون 13» تبدیل نکن.\n- اگر نتایج سرچ فقط بخشی از مشخصات را تأیید می‌کنند، فقط همان بخش‌های مطمئن را بنویس و بقیه را عمومی و بدون عددسازی توضیح بده.\n- قیمت روز، موجودی، تاریخ عرضه قطعی و مشخصات عددی نامطمئن را اختراع نکن.`;
+    userPrompt += `\n\n# اطلاعات تازه از جستجوی وب\n${webSearchContext.trim()}\n\nقانون استفاده از سرچ وب:\n- اگر تصویر محصول ارسال شده، تصویر و متن روی بسته‌بندی از نتایج سرچ و نام خام کاربر معتبرتر است.
+- اگر تصویر ارسال نشده، این اطلاعات را برای مدل‌ها/نسخه‌های جدید، مشخصات محصول و اصلاح نام، از دانش داخلی خودت معتبرتر بدان.\n- اگر نام خام محصول جدید است، آن را به محصول قدیمی‌تر تغییر نده. مثال: اگر کاربر «ایفون 17» نوشته، آن را به «ایفون 13» تبدیل نکن.\n- اگر نتایج سرچ فقط بخشی از مشخصات را تأیید می‌کنند، فقط همان بخش‌های مطمئن را بنویس و بقیه را عمومی و بدون عددسازی توضیح بده.\n- قیمت روز، موجودی، تاریخ عرضه قطعی و مشخصات عددی نامطمئن را اختراع نکن.`;
   } else {
     userPrompt += '\n\n# تازگی اطلاعات\nاگر محصول وابسته به سال، نسخه یا مدل جدید است و اطلاعات قطعی نداری، نام کاربر را به مدل قدیمی‌تر تبدیل نکن و مشخصات نامطمئن را قطعی ننویس.';
   }
@@ -939,6 +948,10 @@ function getNaturalInlineLinkSentence(
     return 'برای تکمیل مراقبت روزانه دهان، محصولات بخش <a href="#">بهداشت دهان و دندان</a> انتخاب‌های مرتبط‌تری در اختیار شما می‌گذارند.';
   }
 
+  if (has([/آب\s*زمزم|زمزم|آب\s*معدنی|آب\s*آشامیدنی|نوشیدنی|water|zamzam|drink|beverage/])) {
+    return 'برای تکمیل خرید خوراکی و نوشیدنی، می‌توانید بخش <a href="#">مواد غذایی و نوشیدنی</a> را هم بررسی کنید.';
+  }
+
   if (has([/کرم|لوسیون|ضد آفتاب|آبرسان|مرطوب.?کننده|پوست|آرایشی|بهداشتی|ریمل|رژ|پنکک|کازمتیک|cosmetic|cream|lotion|sunscreen|skin/])) {
     return 'اگر به دنبال محصولات مکمل هستید، دسته <a href="#">لوازم آرایشی و بهداشتی</a> گزینه‌های مرتبط بیشتری دارد.';
   }
@@ -1029,6 +1042,10 @@ function getManualInternalLinkAdvice(
     };
   }
 
+  if (has([/آب\s*زمزم|زمزم|آب\s*معدنی|آب\s*آشامیدنی|نوشیدنی|water|zamzam|drink|beverage/])) {
+    return 'برای تکمیل خرید خوراکی و نوشیدنی، می‌توانید بخش <a href="#">مواد غذایی و نوشیدنی</a> را هم بررسی کنید.';
+  }
+
   if (has([/کرم|لوسیون|ضد آفتاب|آبرسان|مرطوب.?کننده|پوست|آرایشی|بهداشتی|ریمل|رژ|پنکک|کازمتیک|cosmetic|cream|lotion|sunscreen|skin/])) {
     return {
       target: 'دسته‌بندی دقیق محصول در لوازم آرایشی و بهداشتی؛ اگر نبود، دسته‌بندی مادر لوازم آرایشی و بهداشتی',
@@ -1116,28 +1133,30 @@ function improvePersianNaturalness(text: string): string {
 }
 
 
-function restoreRawIdentityIfModelSwappedProduct(data: ProductData, rawProductName: string): ProductData {
-  const rawTokens = getProductIdentityTokens(rawProductName);
-  if (rawTokens.length === 0) return data;
+function restoreRawIdentityIfModelSwappedProduct(data: ProductData, rawProductName: string, hasProductImage = false): ProductData {
+  // Do not force the raw typed name when image exists.
+  // The user may type a fake/wrong name; the image/label must win.
+  if (hasProductImage) return data;
 
-  const correctedNormalized = normalizeSearchTokenText(data.correctedProductName || '');
-  const focusNormalized = normalizeSearchTokenText(data.focusKeyword || '');
-  const combined = `${correctedNormalized} ${focusNormalized}`;
-  const hasRawIdentity = rawTokens.some((token) => combined.includes(token));
+  const raw = String(rawProductName || '').trim();
+  if (!raw) return data;
 
-  if (hasRawIdentity) return data;
+  const corrected = String(data.correctedProductName || '').trim();
+  const focus = String(data.focusKeyword || '').trim();
 
-  const safeName = rawProductName.trim();
-  if (!safeName) return data;
+  // Only repair empty/useless output. Do NOT prevent normal name correction.
+  if (!corrected || corrected.length < 2) {
+    return {
+      ...data,
+      correctedProductName: raw,
+      focusKeyword: focus || raw,
+      seoTitle: `خرید ${raw}`.slice(0, 60),
+      metaDescription: `خرید ${raw} با توضیحات کامل، مشخصات محصول و راهنمای انتخاب برای ثبت سفارش مطمئن‌تر.`,
+      altImageText: raw,
+    };
+  }
 
-  return {
-    ...data,
-    correctedProductName: safeName,
-    focusKeyword: safeName,
-    seoTitle: `خرید ${safeName}`.slice(0, 60),
-    metaDescription: `خرید ${safeName} با توضیحات کامل، مشخصات محصول و راهنمای انتخاب برای ثبت سفارش مطمئن‌تر.`,
-    altImageText: safeName,
-  };
+  return data;
 }
 
 
@@ -1185,7 +1204,7 @@ function detectKeywordCategoryText(data: ProductData): string {
   if (/شوینده|لباسشویی|ظرفشویی|پاک.?کننده|جرم.?گیر|مایع|پودر\s*لباس|detergent|cleaner/.test(text)) {
     return 'detergent';
   }
-  if (/برنج|روغن|چای|نوشیدنی|شکلات|بیسکویت|خوراکی|غذایی|رب|تن ماهی|ماکارونی|زعفران|food|tea/.test(text)) {
+  if (/آب\s*زمزم|زمزم|آب\s*معدنی|آب\s*آشامیدنی|نوشیدنی|برنج|روغن|چای|شکلات|بیسکویت|خوراکی|غذایی|رب|تن ماهی|ماکارونی|زعفران|water|zamzam|food|tea/.test(text)) {
     return 'food';
   }
   return 'general';
@@ -1649,7 +1668,7 @@ function detectProductContentType(data: ProductData, rawProductName: string, bri
 
   if (/لوسیون|وازلین|gluta|hya|سرم|کرم|پوست|آبرسان|مرطوب|ضد\s*آفتاب|شامپو|ماسک\s*مو|نرم.?کننده\s*مو|آرایشی|بهداشتی|مو\b|hair|skin|lotion|serum|cream|vaseline/.test(text)) return 'beauty';
   if (/شوینده|لباسشویی|ظرفشویی|پاک.?کننده|جرم.?گیر|مایع|پودر\s*لباس|detergent|cleaner/.test(text)) return 'detergent';
-  if (/برنج|روغن|چای|قهوه|نوشیدنی|شکلات|بیسکویت|خوراکی|غذایی|پنیر|لبنیات|food|coffee|tea/.test(text)) return 'food';
+  if (/آب\s*زمزم|زمزم|آب\s*معدنی|آب\s*آشامیدنی|نوشیدنی|برنج|روغن|چای|قهوه|شکلات|بیسکویت|خوراکی|غذایی|پنیر|لبنیات|water|zamzam|food|coffee|tea/.test(text)) return 'food';
   if (/موبایل|گوشی|آیفون|سامسونگ|شیائومی|لپ.?تاپ|تبلت|هدفون|شارژر|دیجیتال|iphone|samsung|xiaomi/.test(text)) return 'digital';
   if (/لباس|پوشاک|کفش|کیف|شلوار|پیراهن|مانتو|clothing|shirt|shoe/.test(text)) return 'clothing';
   return 'general';
@@ -2017,7 +2036,7 @@ async function callGitHubModel(
         throw new Error(`${model.id}: empty response from AI model.`);
       }
 
-      const rawGeneratedData = restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName);
+      const rawGeneratedData = restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName, Boolean(productImage));
       const generatedData = sanitizeCountryFieldsInProductData(ensureMohannadFullDescriptionDepth(
         rawGeneratedData,
         productName,
