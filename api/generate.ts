@@ -1273,7 +1273,7 @@ function addManualInternalLinkMarkerToProductData(
 
 function improvePersianNaturalness(text: string): string {
   return String(text || '')
-    .replace(/همچنین\s*برای\s*تجربه[^.؟<]*(?:،|,)\s*می‌توانید\s*آن\s*را\s*همراه\s*با\s*(<a href="https://noon-valqalam.ir/product-category/hypermarket/">[^<]+<\/a>|[^.؟]+)\s*استفاده\s*کنید\.?/g,
+    .replace(/همچنین\s*برای\s*تجربه[^.؟<]*(?:،|,)\s*می‌توانید\s*آن\s*را\s*همراه\s*با\s*(?:<a\b[^>]*>[^<]+<\/a>|[^.؟]+)\s*استفاده\s*کنید\.?/g,
       'همچنین این محصول برای آماده‌سازی نوشیدنی‌های گرم روزانه کاربرد دارد.')
     .replace(/برای\s*تجربه\s*طعم‌های\s*متنوع‌تر[^.؟]*\.?/g, '')
     .replace(/قطعاً\s*از\s*طعم\s*بی‌نظیر\s*آن\s*لذت\s*خواهید\s*برد\.?/g, 'این محصول می‌تواند طعم نوشیدنی را نرم‌تر و دلپذیرتر کند.')

@@ -28,3 +28,9 @@ AI_MODEL_TIMEOUT_MS=60000
 WEB_SEARCH_TOTAL_TIMEOUT_MS=24000
 WEB_SEARCH_TIMEOUT_MS=10000
 ```
+
+
+## Runtime Fix
+
+این نسخه خطای Vercel `FUNCTION_INVOCATION_FAILED` را هم فیکس می‌کند.
+علت خطا یک Regex خراب شده در کد بود که به خاطر جایگزینی لینک داخلی ایجاد شده بود.
