@@ -310,11 +310,6 @@ const standardDescriptionPrompt = `
 - پوشاک: «🧵 جنس و طراحی»، «📏 راهنمای سایز»، «🧺 روش شستشو و نگهداری»، «📦 مشخصات محصول» را بنویس.
 
 # قوانین مهم
-- Yoast حرفه‌ای جدید: کلیدواژه کانونی کوتاه و قابل جستجو باشد، حداکثر ۴ واژه محتوایی. مدل، حجم، وزن، تعداد و کد محصول را داخل کلیدواژه کانونی نگذار.
-- کلیدواژه کانونی باید در پاراگراف اول، حداقل یک زیرعنوان h5، عنوان سئو، توضیحات متا و متن جایگزین تصویر وجود داشته باشد.
-- تراکم کلیدواژه را طبیعی نگه دار: حداقل ۲ بار و ترجیحاً ۳ بار در توضیحات کامل، اما از تکرار مصنوعی و keyword stuffing خودداری کن.
-- توضیحات متا باید ۱۲۰ تا ۱۵۵ کاراکتر باشد و کلیدواژه کانونی را داشته باشد.
-- متن alt تصویر باید کلیدواژه کانونی را داشته باشد؛ اما تصویر باید در ووکامرس به عنوان تصویر محصول آپلود شود.
 - اگر روی عکس یا ورودی کاربر جزئیاتی مثل SPF، PA، UVA/UVB، 10.4 oz، ml، g، شماره رنگ، رایحه، نوع پوست/مو یا ترکیبات شاخص وجود دارد، باید در نام محصول، توضیحات و مشخصات محصول بیاید؛ اما اگر وجود ندارد، اجباری یا ساختگی ننویس.
 - حجم را فقط در بخش «📦 مشخصات محصول» بنویس و در ویژگی‌ها/مزایا تکرار نکن. اما SPF، PA، UVA/UVB، شماره رنگ، مدل، سری، رایحه یا ویژگی‌های واقعی محصول اگر کاربردی و مهم هستند، می‌توانند در ویژگی‌ها هم بیایند.
 - متن باید طبیعی، فروشگاهی و قابل انتشار باشد.
@@ -2844,212 +2839,6 @@ function sanitizeCountryFieldsInProductData(data: ProductData): ProductData {
   };
 }
 
-
-function absoluteFinalOutputClean(data: ProductData): ProductData {
-  const cleanText = (value: string) => normalizeHtmlDividers(
-    hardRemoveExtraVolumeSpecsUniversal(
-      normalizeDuplicateMeasurementUnits(String(value || ''))
-        .replace(/(?:<hr\s*\/>\s*){2,}/gi, '<hr />')
-    )
-  );
-
-  return {
-    ...data,
-    correctedProductName: cleanText(data.correctedProductName),
-    englishProductName: cleanText(data.englishProductName),
-    fullDescription: cleanText(data.fullDescription),
-    shortDescription: cleanText(data.shortDescription),
-    seoTitle: cleanText(data.seoTitle),
-    focusKeyword: cleanText(data.focusKeyword),
-    metaDescription: cleanText(data.metaDescription),
-    altImageText: cleanText(data.altImageText),
-  };
-}
-
-
-
-function stripSpecsForYoastFocus(text: string): string {
-  return String(text || '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+مدل\s+[A-Za-z0-9][A-Za-z0-9\s\-_.]+/gi, ' ')
-    .replace(/\s+حجم\s*[:：]?\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s*(?:میلی[\s\u200c]*لیتر|میل[\s\u200c]*لیتر|ml|mL|گرم|g|gr|oz|fl\s*oz|لیتر)/gi, ' ')
-    .replace(/\s+وزن\s*[:：]?\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s*(?:گرم|g|gr|کیلوگرم|kg)/gi, ' ')
-    .replace(/\b(?:SPF|PA|UVA\/UVB)\b\s*[0-9+\s]*/gi, ' ')
-    .replace(/[()（）،,:：؛\-|]+/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
-
-function persianContentWords(text: string): string[] {
-  const stopWords = new Set(['و','یا','در','از','با','به','برای','روی','داخل','مدل','حجم','وزن','عدد','تعداد','خرید','قیمت','محصول','مناسب','انواع']);
-  return String(text || '')
-    .split(/\s+/)
-    .map((word) => word.replace(/[^\u0600-\u06FF‌]/g, '').trim())
-    .filter((word) => word && word.length > 1 && !stopWords.has(word));
-}
-
-function buildYoastFocusKeyword(data: ProductData, rawProductName: string): string {
-  const source = stripSpecsForYoastFocus(`${data.correctedProductName || ''} ${rawProductName || ''} ${data.focusKeyword || ''}`);
-
-  const productTypes = [
-    'کرم چندمنظوره',
-    'کرم ضد آفتاب',
-    'ضد آفتاب',
-    'کرم مرطوب کننده',
-    'کرم آبرسان',
-    'لوسیون بدن',
-    'شامپو',
-    'ماسک مو',
-    'سرم مو',
-    'قهوه فوری',
-    'هات چاکلت',
-    'آب آشامیدنی',
-    'نوشیدنی',
-    'زعفران',
-    'سوهان',
-    'گز',
-  ];
-
-  const words = persianContentWords(source);
-  const brand = words.find((word) => !['کرم','چندمنظوره','ضد','آفتاب','مرطوب','کننده','آبرسان','لوسیون','بدن','شامپو','ماسک','سرم','مو'].includes(word) && word.length > 2);
-
-  for (const type of productTypes) {
-    if (source.includes(type)) {
-      const phrase = brand && !type.includes(brand) ? `${type} ${brand}` : type;
-      return phrase.split(/\s+/).slice(0, 4).join(' ').trim();
-    }
-  }
-
-  const candidate = words.slice(0, 4).join(' ').trim();
-  return candidate || stripSpecsForYoastFocus(data.focusKeyword || data.correctedProductName || rawProductName).split(/\s+/).slice(0, 4).join(' ').trim();
-}
-
-function escapeRegex(value: string): string {
-  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function phraseCount(text: string, phrase: string): number {
-  if (!phrase) return 0;
-  const plain = String(text || '').replace(/<[^>]+>/g, ' ');
-  return (plain.match(new RegExp(escapeRegex(phrase), 'gi')) || []).length;
-}
-
-function ensurePhraseInFirstParagraph(html: string, focus: string): string {
-  let output = String(html || '');
-  if (!focus) return output;
-
-  const firstP = output.match(/<p>[\s\S]*?<\/p>/i);
-  if (!firstP) {
-    return `<p>${escapeHtmlText(focus)} محصولی کاربردی برای بررسی و خرید در فروشگاه نون و القلم است.</p>${output}`;
-  }
-
-  if (new RegExp(escapeRegex(focus), 'i').test(firstP[0])) return output;
-
-  const updated = firstP[0].replace(/<p>/i, `<p>${escapeHtmlText(focus)}؛ `);
-  return output.replace(firstP[0], updated);
-}
-
-function ensurePhraseInSubheading(html: string, focus: string): string {
-  let output = String(html || '');
-  if (!focus) return output;
-
-  if (new RegExp(`<h[2-6][^>]*>[^<]*${escapeRegex(focus)}`, 'i').test(output)) return output;
-
-  const target = output.match(/<h5>\s*✅\s*ویژگی‌های\s*اصلی\s*:?\s*<\/h5>/i);
-  if (target) {
-    return output.replace(target[0], `<h5>✅ ویژگی‌های ${escapeHtmlText(focus)}:</h5>`);
-  }
-
-  const firstH5 = output.match(/<h5>[\s\S]*?<\/h5>/i);
-  if (firstH5) {
-    return output.replace(firstH5[0], `<h5>✅ ویژگی‌های ${escapeHtmlText(focus)}:</h5>`);
-  }
-
-  return `${output}<hr /><h5>✅ ویژگی‌های ${escapeHtmlText(focus)}:</h5>`;
-}
-
-function ensureYoastPhraseDensity(html: string, focus: string): string {
-  let output = ensurePhraseInSubheading(ensurePhraseInFirstParagraph(String(html || ''), focus), focus);
-  if (!focus) return output;
-
-  if (phraseCount(output, focus) < 2) {
-    const benefitP = output.match(/<h5>\s*✨\s*مزایای\s*استفاده\s*:?\s*<\/h5>\s*<p>/i);
-    if (benefitP) {
-      output = output.replace(benefitP[0], `${benefitP[0]}${escapeHtmlText(focus)} برای استفاده روزانه و انتخاب محصول مناسب اهمیت دارد. `);
-    } else {
-      output += `<p>${escapeHtmlText(focus)} برای استفاده روزانه و انتخاب محصول مناسب اهمیت دارد.</p>`;
-    }
-  }
-
-  if (phraseCount(output, focus) < 3) {
-    const specsIndex = output.search(/<h5>\s*📦\s*مشخصات\s*محصول/i);
-    const add = `<p>هنگام خرید ${escapeHtmlText(focus)} به نیاز مصرف، روش استفاده و مشخصات محصول توجه کنید.</p><hr />`;
-    if (specsIndex >= 0) {
-      output = output.slice(0, specsIndex) + add + output.slice(specsIndex);
-    } else {
-      output += add;
-    }
-  }
-
-  return normalizeHtmlDividers(output);
-}
-
-function ensureYoastMeta(meta: string, focus: string): string {
-  let output = String(meta || '').trim();
-  if (!output || !output.includes(focus)) {
-    output = `خرید ${focus} با بررسی مشخصات، کاربرد و توضیحات محصول در فروشگاه نون و القلم. مناسب انتخاب مطمئن و روزانه.`;
-  }
-
-  if (output.length < 120) {
-    output = `${output} ${focus} را با توضیحات کامل و مشخصات دقیق بررسی کنید.`;
-  }
-
-  if (output.length > 155) {
-    output = output.slice(0, 152).replace(/\s+\S*$/, '') + '...';
-  }
-
-  if (!output.includes(focus)) {
-    output = `خرید ${focus}؛ ${output}`.slice(0, 155);
-  }
-
-  return output.trim();
-}
-
-function ensureYoastTitle(title: string, focus: string): string {
-  let output = String(title || '').trim();
-  if (!output || !output.includes(focus)) {
-    output = `خرید ${focus} | نون و القلم`;
-  }
-  if (output.length > 65) output = output.slice(0, 62).replace(/\s+\S*$/, '') + '...';
-  return output;
-}
-
-function ensureYoastAlt(alt: string, focus: string): string {
-  const output = String(alt || '').replace(/\s+/g, ' ').trim();
-  if (output && output.includes(focus)) return output;
-  return `تصویر محصول ${focus} برای معرفی و خرید در نون و القلم`;
-}
-
-function applyProfessionalYoastRules(data: ProductData, rawProductName: string, briefDescription: string): ProductData {
-  const focus = buildYoastFocusKeyword(data, rawProductName).split(/\s+/).slice(0, 4).join(' ').trim();
-
-  const fullDescription = normalizeHtmlDividers(ensureYoastPhraseDensity(data.fullDescription, focus));
-  const shortDescription = String(data.shortDescription || '').includes(focus)
-    ? data.shortDescription
-    : `${focus}؛ ${data.shortDescription || ''}`.trim();
-
-  return {
-    ...data,
-    focusKeyword: focus,
-    fullDescription,
-    shortDescription,
-    seoTitle: ensureYoastTitle(data.seoTitle, focus),
-    metaDescription: ensureYoastMeta(data.metaDescription, focus),
-    altImageText: ensureYoastAlt(data.altImageText, focus),
-  };
-}
-
-
 function validateProductData(data: ProductData, isNutsOrDriedFruit: boolean) {
   const requiredFields: Array<keyof ProductData> = [
     'correctedProductName',
@@ -3186,7 +2975,7 @@ async function callGitHubModel(
       generatedData.fullDescription = normalizeHtmlDividers(hardRemoveExtraVolumeSpecsUniversal(generatedData.fullDescription));
       generatedData.shortDescription = hardRemoveExtraVolumeSpecsUniversal(generatedData.shortDescription);
       validateProductData(generatedData, isNutsOrDriedFruit);
-      return absoluteFinalOutputClean(applyProfessionalYoastRules(generatedData, productName, briefDescription));
+      return generatedData;
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
@@ -3260,7 +3049,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ),
         };
 
-        const responseDataBeforeYoast: ProductData = cleanSpecsRepetitionInProductData(
+        const responseData: ProductData = cleanSpecsRepetitionInProductData(
           cleanDuplicateMeasurementUnitsInProductData(
             sanitizeCountryFieldsInProductData({
               ...withKnownDetails,
@@ -3270,11 +3059,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           )
         );
 
-        const responseData: ProductData = applyProfessionalYoastRules(responseDataBeforeYoast, productName, briefDescription || '');
-
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('X-Mohannad-Model', model.id);
-        return res.status(200).json(absoluteFinalOutputClean(applyProfessionalYoastRules(responseData, productName, briefDescription || '')));
+        return res.status(200).json(responseData);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`Model failed: ${message}`);
