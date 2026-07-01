@@ -957,6 +957,43 @@ function dedupeStructuredDetails(details: InputDetail[]): InputDetail[] {
 
 
 
+
+function normalizeHtmlDividers(html: string): string {
+  let output = String(html || '');
+
+  // Normalize hr variations.
+  output = output.replace(/<hr\s*\/?>/gi, '<hr />');
+
+  // Remove empty paragraphs/spaces around dividers.
+  output = output
+    .replace(/(?:\s|&nbsp;|<p>\s*<\/p>)+/gi, ' ')
+    .replace(/\s*<hr\s*\/>\s*/gi, '<hr />');
+
+  // Collapse repeated dividers: <hr /><hr /><hr /> => <hr />
+  output = output.replace(/(?:<hr\s*\/>\s*){2,}/gi, '<hr />');
+
+  // Ensure only one divider before each h5.
+  output = output.replace(/(?:<hr\s*\/>\s*)+<h5>/gi, '<hr /><h5>');
+
+  // Remove divider at very beginning.
+  output = output.replace(/^\s*(?:<hr\s*\/>\s*)+/i, '');
+
+  // Remove divider at very end.
+  output = output.replace(/(?:<hr\s*\/>\s*)+$/i, '');
+
+  // Keep readable separation in HTML string without creating duplicates.
+  output = output
+    .replace(/<\/p><hr \/>/gi, '</p><hr />')
+    .replace(/<\/ul><hr \/>/gi, '</ul><hr />')
+    .replace(/<hr \/><hr \/>/gi, '<hr />')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/>\s+</g, '><')
+    .trim();
+
+  return output;
+}
+
+
 function stripLeakedOutputSectionsFromFullDescription(html: string): string {
   let output = String(html || '');
 
@@ -1070,11 +1107,11 @@ function removeAllSpecsSectionsFromDescription(html: string): string {
   // Remove remaining loose volume-only lines outside canonical specs.
   output = output.replace(/(?:^|\n)\s*حجم\s*[:：][^\n<]+/gi, '');
 
-  return output
+  return normalizeHtmlDividers(output
     .replace(/<ul>\s*<\/ul>/gi, '')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/>\s+</g, '><')
-    .trim();
+    .trim());
 }
 
 function buildCanonicalSpecsSection(pairs: InputDetail[]): string {
@@ -1106,7 +1143,7 @@ function rebuildSpecsSectionFromData(
   const cleanDescription = removeAllSpecsSectionsFromDescription(withoutLeaks);
   const specsSection = buildCanonicalSpecsSection(allPairs);
 
-  return hardRemoveExtraVolumeSpecsUniversal(`${cleanDescription}${specsSection ? '\n' + specsSection : ''}`);
+  return normalizeHtmlDividers(hardRemoveExtraVolumeSpecsUniversal(`${cleanDescription}${specsSection ? '\n' + specsSection : ''}`));
 }
 
 
@@ -2511,9 +2548,9 @@ function cleanSpecsRepetitionInProductData(data: ProductData): ProductData {
     ...data,
     correctedProductName: normalizeDuplicateMeasurementUnits(data.correctedProductName),
     englishProductName: normalizeDuplicateMeasurementUnits(data.englishProductName),
-    fullDescription: hardRemoveExtraVolumeSpecsUniversal(
+    fullDescription: normalizeHtmlDividers(hardRemoveExtraVolumeSpecsUniversal(
       removeDuplicateVolumeLinesInSpecs(cleanSpecsRepetitionInHtml(data.fullDescription))
-    ),
+    )),
     shortDescription: hardRemoveExtraVolumeSpecsUniversal(data.shortDescription),
     seoTitle: normalizeDuplicateMeasurementUnits(data.seoTitle),
     focusKeyword: normalizeDuplicateMeasurementUnits(data.focusKeyword),
@@ -2935,7 +2972,7 @@ async function callGitHubModel(
         briefDescription,
         isNutsOrDriedFruit,
       ))));
-      generatedData.fullDescription = hardRemoveExtraVolumeSpecsUniversal(generatedData.fullDescription);
+      generatedData.fullDescription = normalizeHtmlDividers(hardRemoveExtraVolumeSpecsUniversal(generatedData.fullDescription));
       generatedData.shortDescription = hardRemoveExtraVolumeSpecsUniversal(generatedData.shortDescription);
       validateProductData(generatedData, isNutsOrDriedFruit);
       return generatedData;
@@ -3016,7 +3053,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           cleanDuplicateMeasurementUnitsInProductData(
             sanitizeCountryFieldsInProductData({
               ...withKnownDetails,
-              fullDescription: rebuildSpecsSectionFromData(withKnownDetails.fullDescription, productName, briefDescription || ''),
+              fullDescription: normalizeHtmlDividers(rebuildSpecsSectionFromData(withKnownDetails.fullDescription, productName, briefDescription || '')),
               shortDescription: hardRemoveExtraVolumeSpecsUniversal(withKnownDetails.shortDescription),
             })
           )
