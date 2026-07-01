@@ -664,7 +664,7 @@ function buildUserPrompt(
 - کشور را به هیچ شکل در خروجی ننویس؛ حتی اگر روی بسته‌بندی مشخص باشد.
 - جزئیات قابل مشاهده روی عکس مثل حجم، وزن، اونس، میلی‌لیتر، گرم، SPF، PA+/PA++/PA+++، UVA/UVB، شماره رنگ، سری، مدل، رایحه، طعم، نوع پوست/مو، ترکیبات شاخص و ویژگی‌های روی بسته‌بندی را حتماً بخوان.
 - این جزئیات را فقط اگر واقعاً روی عکس یا در متن کاربر مشخص بود بنویس؛ برای محصولی که این موارد را ندارد، اجباری یا ساختگی اضافه نکن.
-- اگر یک مقدار هم به فارسی و هم به انگلیسی/اختصاری نوشته شده بود، فقط یک‌بار بنویس. برای متن فارسی، واحد فارسی را ترجیح بده: «300 میلی‌لیتر» نه «300 میلی‌لیتر 300 ml»، «250 گرم» نه «250 گرم 250 g».
+- اگر یک مقدار هم به فارسی و هم به انگلیسی/اختصاری نوشته شده بود، فقط یک‌بار بنویس. مثال: «حجم 300 میلی‌لیتر 300 ml» غلط است و باید «حجم 300 میلی‌لیتر» شود. برای متن فارسی، واحد فارسی را ترجیح بده: «300 میلی‌لیتر» نه «300 میلی‌لیتر 300 ml»، «250 گرم» نه «250 گرم 250 g».
 - اگر فقط واحد انگلیسی روی عکس بود و معادل فارسی در ورودی نبود، همان را نگه دار؛ مثل «10.4 oz». اما اگر معادل فارسی و انگلیسی یک عدد کنار هم بودند، تکراری ننویس.
 - برای محصولات آرایشی/بهداشتی اگر روی بسته‌بندی SPF، حجم مثل 10.4 oz، 300 ml، شماره رنگ، نوع پوست یا ترکیب شاخص نوشته شده، باید در correctedProductName، fullDescription و بخش 📦 مشخصات محصول بیاید.
 - برای محصولات غیرآرایشی هم همین قانون برقرار است: هر عدد/واحد/ویژگی مهم روی بسته‌بندی، اگر قابل خواندن بود، در مشخصات و توضیحات ذکر شود؛ اما اگر نبود، حدس نزن.
@@ -1778,17 +1778,36 @@ function ensureYoastSeoFields(data: ProductData): ProductData {
 
 
 
+function toEnglishDigitsForUnitCompare(input: string): string {
+  return String(input || '')
+    .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+}
+
 function normalizeDuplicateMeasurementUnits(text: string): string {
   let output = String(text || '');
 
+  // Normalize half-space variants only for unit cleanup; keep the visible Persian form.
+  output = output
+    .replace(/میلی[\s\u200c]*لیتر/gi, 'میلی‌لیتر')
+    .replace(/میل[\s\u200c]*لیتر/gi, 'میلی‌لیتر');
+
+  // Convert Persian/Arabic digits to English for reliable regex comparison.
+  output = toEnglishDigitsForUnitCompare(output);
+
   // Same value repeated in Persian + English units: keep Persian for Persian product copy.
   output = output
-    .replace(/\b(\d+(?:[.,]\d+)?)\s*(?:میلی\s*لیتر|میل\s*لیتر)\s+\1\s*(?:ml|mL)\b/gi, '$1 میلی‌لیتر')
-    .replace(/\b(\d+(?:[.,]\d+)?)\s*(?:ml|mL)\s+\1\s*(?:میلی\s*لیتر|میل\s*لیتر)\b/gi, '$1 میلی‌لیتر')
-    .replace(/\b(\d+(?:[.,]\d+)?)\s*گرم\s+\1\s*(?:g|gr)\b/gi, '$1 گرم')
-    .replace(/\b(\d+(?:[.,]\d+)?)\s*(?:g|gr)\s+\1\s*گرم\b/gi, '$1 گرم')
-    .replace(/\b(\d+(?:[.,]\d+)?)\s*کیلوگرم\s+\1\s*(?:kg)\b/gi, '$1 کیلوگرم')
-    .replace(/\b(\d+(?:[.,]\d+)?)\s*(?:kg)\s+\1\s*کیلوگرم\b/gi, '$1 کیلوگرم');
+    .replace(/(\d+(?:[.,]\d+)?)\s*میلی‌لیتر\s+\1\s*(?:ml|mL)\b/gi, '$1 میلی‌لیتر')
+    .replace(/(\d+(?:[.,]\d+)?)\s*(?:ml|mL)\s+\1\s*میلی‌لیتر\b/gi, '$1 میلی‌لیتر')
+    .replace(/(\d+(?:[.,]\d+)?)\s*گرم\s+\1\s*(?:g|gr)\b/gi, '$1 گرم')
+    .replace(/(\d+(?:[.,]\d+)?)\s*(?:g|gr)\s+\1\s*گرم\b/gi, '$1 گرم')
+    .replace(/(\d+(?:[.,]\d+)?)\s*کیلوگرم\s+\1\s*(?:kg)\b/gi, '$1 کیلوگرم')
+    .replace(/(\d+(?:[.,]\d+)?)\s*(?:kg)\s+\1\s*کیلوگرم\b/gi, '$1 کیلوگرم');
+
+  // Also catch common repeated "حجم 300 میلی‌لیتر 300 ml" style even if words are between them.
+  output = output
+    .replace(/(حجم\s*[:：\-]?\s*)(\d+(?:[.,]\d+)?)\s*میلی‌لیتر\s+\2\s*(?:ml|mL)\b/gi, '$1$2 میلی‌لیتر')
+    .replace(/(وزن\s*[:：\-]?\s*)(\d+(?:[.,]\d+)?)\s*گرم\s+\2\s*(?:g|gr)\b/gi, '$1$2 گرم');
 
   // Common adjacent duplicate tokens from model/image text extraction.
   output = output
@@ -1810,7 +1829,7 @@ function normalizeDuplicateMeasurementUnitsInHtml(html: string): string {
 function extractVisibleSpecTokensFromInput(rawProductName: string, briefDescription: string): string[] {
   const source = normalizeDuplicateMeasurementUnits(`${rawProductName || ''} ${briefDescription || ''}`);
 
-  const hasPersianMl = (num: string) => new RegExp(`${num.replace('.', '\\.')}\\s*(?:میلی\\s*لیتر|میل\\s*لیتر)`, 'i').test(source);
+  const hasPersianMl = (num: string) => new RegExp(`${num.replace('.', '\\.')}\\s*(?:میلی\\u200cلیتر|میلی\\s*لیتر|میل\\s*لیتر)`, 'i').test(source);
   const hasPersianGram = (num: string) => new RegExp(`${num.replace('.', '\\.')}\\s*(?:گرم)`, 'i').test(source);
 
   const patterns: RegExp[] = [
@@ -1819,7 +1838,7 @@ function extractVisibleSpecTokensFromInput(rawProductName: string, briefDescript
     /\bUVA\/UVB\b/gi,
     /\b[0-9]+(?:\.[0-9]+)?\s*(?:fl\s*)?oz\b/gi,
     /\b[0-9]+(?:\.[0-9]+)?\s*(?:ml|mL|g|gr)\b/g,
-    /[0-9]+(?:\.[0-9]+)?\s*(?:میلی\s*لیتر|میل\s*لیتر|گرم|کیلوگرم)/g,
+    /[0-9]+(?:\.[0-9]+)?\s*(?:میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|گرم|کیلوگرم)/g,
   ];
 
   const found: string[] = [];
@@ -1892,17 +1911,18 @@ function normalizeProductData(data: ProductData): ProductData {
 
 
 function cleanDuplicateMeasurementUnitsInProductData(data: ProductData): ProductData {
+  const clean = (value: string) => normalizeDuplicateMeasurementUnits(normalizeDuplicateMeasurementUnits(value));
   return {
     ...data,
-    correctedProductName: normalizeDuplicateMeasurementUnits(data.correctedProductName),
-    englishProductName: normalizeDuplicateMeasurementUnits(data.englishProductName),
-    fullDescription: normalizeDuplicateMeasurementUnitsInHtml(data.fullDescription),
-    shortDescription: normalizeDuplicateMeasurementUnits(data.shortDescription),
-    seoTitle: normalizeDuplicateMeasurementUnits(data.seoTitle),
+    correctedProductName: clean(data.correctedProductName),
+    englishProductName: clean(data.englishProductName),
+    fullDescription: clean(data.fullDescription),
+    shortDescription: clean(data.shortDescription),
+    seoTitle: clean(data.seoTitle),
     slug: data.slug,
-    focusKeyword: normalizeDuplicateMeasurementUnits(data.focusKeyword),
-    metaDescription: normalizeDuplicateMeasurementUnits(data.metaDescription),
-    altImageText: normalizeDuplicateMeasurementUnits(data.altImageText),
+    focusKeyword: clean(data.focusKeyword),
+    metaDescription: clean(data.metaDescription),
+    altImageText: clean(data.altImageText),
   };
 }
 
