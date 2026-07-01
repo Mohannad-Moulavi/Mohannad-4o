@@ -2067,6 +2067,68 @@ function cleanSpecsRepetitionInHtml(html: string): string {
 }
 
 
+
+function hardRemoveExtraVolumeSpecs(html: string): string {
+  let output = normalizeDuplicateMeasurementUnits(String(html || ''));
+
+  return output.replace(
+    /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i,
+    (_match, open, body, close) => {
+      const items = String(body || '').match(/<li>[\s\S]*?<\/li>/gi) || [];
+
+      let volumeItem = '';
+      const others: string[] = [];
+
+      for (const rawItem of items) {
+        const inner = normalizeDuplicateMeasurementUnits(
+          String(rawItem || '').replace(/^<li>/i, '').replace(/<\/li>$/i, '').trim()
+        );
+
+        if (!inner) continue;
+
+        // Anything whose label is حجم is volume. Keep only one.
+        if (/^حجم\s*[:：]/i.test(inner)) {
+          const item = `<li>${inner}</li>`;
+          if (!volumeItem) {
+            volumeItem = item;
+            continue;
+          }
+
+          const currentPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(inner);
+          const chosenPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(volumeItem);
+
+          // If current is Persian and chosen is English, replace. Otherwise delete current.
+          if (currentPersian && !chosenPersian) {
+            volumeItem = item;
+          }
+          continue;
+        }
+
+        others.push(`<li>${inner}</li>`);
+      }
+
+      // Put volume back near product type if possible.
+      const result: string[] = [];
+      let insertedVolume = false;
+
+      for (const item of others) {
+        result.push(item);
+        if (!insertedVolume && volumeItem && /^<li>\s*نوع\s*محصول\s*[:：]/i.test(item)) {
+          result.push(volumeItem);
+          insertedVolume = true;
+        }
+      }
+
+      if (volumeItem && !insertedVolume) result.push(volumeItem);
+
+      return `${open}${result.join('')}${close}`;
+    }
+  )
+  .replace(/<ul>\s*<\/ul>/gi, '')
+  .replace(/>\s+</g, '><')
+  .trim();
+}
+
 function removeDuplicateVolumeLinesInSpecs(html: string): string {
   return String(html || '').replace(
     /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i,
@@ -2109,7 +2171,7 @@ function cleanSpecsRepetitionInProductData(data: ProductData): ProductData {
   return {
     ...data,
     correctedProductName: normalizeDuplicateMeasurementUnits(data.correctedProductName),
-    fullDescription: removeDuplicateVolumeLinesInSpecs(cleanSpecsRepetitionInHtml(data.fullDescription)),
+    fullDescription: hardRemoveExtraVolumeSpecs(removeDuplicateVolumeLinesInSpecs(cleanSpecsRepetitionInHtml(data.fullDescription))),
     shortDescription: normalizeDuplicateMeasurementUnits(data.shortDescription),
     seoTitle: normalizeDuplicateMeasurementUnits(data.seoTitle),
     focusKeyword: normalizeDuplicateMeasurementUnits(data.focusKeyword),
@@ -2117,7 +2179,6 @@ function cleanSpecsRepetitionInProductData(data: ProductData): ProductData {
     altImageText: normalizeDuplicateMeasurementUnits(data.altImageText),
   };
 }
-
 
 
 function stripHtmlForWordCount(html: string): string {
@@ -2526,12 +2587,13 @@ async function callGitHubModel(
       }
 
       const rawGeneratedData = cleanSpecsRepetitionInProductData(cleanDuplicateMeasurementUnitsInProductData(ensureVisibleSpecTokensInName(restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName, Boolean(productImage)), productName, briefDescription)));
-      const generatedData = cleanSpecsRepetitionInProductData(cleanDuplicateMeasurementUnitsInProductData(sanitizeCountryFieldsInProductData(ensureMohannadFullDescriptionDepth(
+      let generatedData = cleanSpecsRepetitionInProductData(cleanDuplicateMeasurementUnitsInProductData(sanitizeCountryFieldsInProductData(ensureMohannadFullDescriptionDepth(
         rawGeneratedData,
         productName,
         briefDescription,
         isNutsOrDriedFruit,
       ))));
+      generatedData.fullDescription = hardRemoveExtraVolumeSpecs(generatedData.fullDescription);
       validateProductData(generatedData, isNutsOrDriedFruit);
       return generatedData;
     } catch (error) {
