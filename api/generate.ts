@@ -2068,6 +2068,153 @@ function cleanSpecsRepetitionInHtml(html: string): string {
 
 
 
+
+function removeDuplicateVolumeLinesPlainText(text: string): string {
+  let output = normalizeDuplicateMeasurementUnits(String(text || ''));
+
+  const lines = output.split(/\r?\n/);
+  const result: string[] = [];
+  let insideSpecs = false;
+  let volumeLine = '';
+  let volumeInserted = false;
+  const specBuffer: string[] = [];
+
+  const flushSpecs = () => {
+    if (!insideSpecs) return;
+    const flushed: string[] = [];
+    let inserted = false;
+
+    for (const line of specBuffer) {
+      if (/^\s*حجم\s*[:：]/i.test(line)) {
+        const current = normalizeDuplicateMeasurementUnits(line.trim());
+
+        if (!volumeLine) {
+          volumeLine = current;
+        } else {
+          const currentPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(current);
+          const chosenPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(volumeLine);
+          if (currentPersian && !chosenPersian) volumeLine = current;
+        }
+        continue;
+      }
+
+      flushed.push(line);
+
+      // Insert volume near product type if possible.
+      if (!inserted && volumeLine && /^\s*نوع\s*محصول\s*[:：]/i.test(line)) {
+        flushed.push(volumeLine);
+        inserted = true;
+      }
+    }
+
+    if (volumeLine && !inserted) flushed.push(volumeLine);
+
+    result.push(...flushed);
+    specBuffer.length = 0;
+    volumeLine = '';
+    volumeInserted = false;
+    insideSpecs = false;
+  };
+
+  for (const rawLine of lines) {
+    const line = normalizeDuplicateMeasurementUnits(rawLine);
+
+    if (/^\s*📦\s*مشخصات\s*محصول\s*[:：]?\s*$/i.test(line) || /^\s*مشخصات\s*محصول\s*[:：]?\s*$/i.test(line)) {
+      flushSpecs();
+      result.push(line);
+      insideSpecs = true;
+      continue;
+    }
+
+    // End plain specs block when another known output section starts.
+    if (insideSpecs && /^\s*(توضیحات\s*کوتاه|کلیدواژه|عنوان\s*سئو|نامک|توضیحات\s*متا|متن\s*جایگزین|کلیدواژه‌های\s*مرتبط|نام\s*محصول)\b/i.test(line)) {
+      flushSpecs();
+      result.push(line);
+      continue;
+    }
+
+    if (insideSpecs) {
+      specBuffer.push(line);
+    } else {
+      result.push(line);
+    }
+  }
+
+  flushSpecs();
+
+  return result
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function hardRemoveExtraVolumeSpecsUniversal(htmlOrText: string): string {
+  let output = normalizeDuplicateMeasurementUnits(String(htmlOrText || ''));
+
+  // HTML specs block: keep only one حجم line.
+  output = output.replace(
+    /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i,
+    (_match, open, body, close) => {
+      const items = String(body || '').match(/<li>[\s\S]*?<\/li>/gi) || [];
+      let volumeItem = '';
+      const others: string[] = [];
+
+      for (const rawItem of items) {
+        const inner = normalizeDuplicateMeasurementUnits(
+          String(rawItem || '').replace(/^<li>/i, '').replace(/<\/li>$/i, '').trim()
+        );
+
+        if (!inner) continue;
+
+        if (/^حجم\s*[:：]/i.test(inner)) {
+          const item = `<li>${inner}</li>`;
+
+          if (!volumeItem) {
+            volumeItem = item;
+          } else {
+            const currentPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(inner);
+            const chosenPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(volumeItem);
+            if (currentPersian && !chosenPersian) volumeItem = item;
+          }
+          continue;
+        }
+
+        others.push(`<li>${inner}</li>`);
+      }
+
+      const result: string[] = [];
+      let inserted = false;
+
+      for (const item of others) {
+        result.push(item);
+        if (!inserted && volumeItem && /^<li>\s*نوع\s*محصول\s*[:：]/i.test(item)) {
+          result.push(volumeItem);
+          inserted = true;
+        }
+      }
+
+      if (volumeItem && !inserted) result.push(volumeItem);
+
+      return `${open}${result.join('')}${close}`;
+    }
+  );
+
+  // Plain-text specs block too.
+  output = removeDuplicateVolumeLinesPlainText(output);
+
+  // A final local fallback for exact adjacent duplicates anywhere.
+  output = output
+    .replace(/(حجم\s*[:：]\s*\d+(?:[.,]\d+)?\s*(?:میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر))\s*\n\s*حجم\s*[:：]\s*\d+(?:[.,]\d+)?\s*(?:ml|mL)\b/gi, '$1')
+    .replace(/(حجم\s*[:：]\s*\d+(?:[.,]\d+)?\s*(?:ml|mL))\s*\n\s*(حجم\s*[:：]\s*\d+(?:[.,]\d+)?\s*(?:میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر))/gi, '$2')
+    .replace(/<ul>\s*<\/ul>/gi, '')
+    .replace(/>\s+</g, '><')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return output;
+}
+
+
 function hardRemoveExtraVolumeSpecs(html: string): string {
   let output = normalizeDuplicateMeasurementUnits(String(html || ''));
 
@@ -2171,8 +2318,11 @@ function cleanSpecsRepetitionInProductData(data: ProductData): ProductData {
   return {
     ...data,
     correctedProductName: normalizeDuplicateMeasurementUnits(data.correctedProductName),
-    fullDescription: hardRemoveExtraVolumeSpecs(removeDuplicateVolumeLinesInSpecs(cleanSpecsRepetitionInHtml(data.fullDescription))),
-    shortDescription: normalizeDuplicateMeasurementUnits(data.shortDescription),
+    englishProductName: normalizeDuplicateMeasurementUnits(data.englishProductName),
+    fullDescription: hardRemoveExtraVolumeSpecsUniversal(
+      removeDuplicateVolumeLinesInSpecs(cleanSpecsRepetitionInHtml(data.fullDescription))
+    ),
+    shortDescription: hardRemoveExtraVolumeSpecsUniversal(data.shortDescription),
     seoTitle: normalizeDuplicateMeasurementUnits(data.seoTitle),
     focusKeyword: normalizeDuplicateMeasurementUnits(data.focusKeyword),
     metaDescription: normalizeDuplicateMeasurementUnits(data.metaDescription),
@@ -2593,7 +2743,8 @@ async function callGitHubModel(
         briefDescription,
         isNutsOrDriedFruit,
       ))));
-      generatedData.fullDescription = hardRemoveExtraVolumeSpecs(generatedData.fullDescription);
+      generatedData.fullDescription = hardRemoveExtraVolumeSpecsUniversal(generatedData.fullDescription);
+      generatedData.shortDescription = hardRemoveExtraVolumeSpecsUniversal(generatedData.shortDescription);
       validateProductData(generatedData, isNutsOrDriedFruit);
       return generatedData;
     } catch (error) {
