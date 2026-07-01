@@ -311,6 +311,7 @@ const standardDescriptionPrompt = `
 
 # قوانین مهم
 - اگر روی عکس یا ورودی کاربر جزئیاتی مثل SPF، PA، UVA/UVB، 10.4 oz، ml، g، شماره رنگ، رایحه، نوع پوست/مو یا ترکیبات شاخص وجود دارد، باید در نام محصول، توضیحات و مشخصات محصول بیاید؛ اما اگر وجود ندارد، اجباری یا ساختگی ننویس.
+- حجم را فقط در بخش «📦 مشخصات محصول» بنویس و در ویژگی‌ها/مزایا تکرار نکن. اما SPF، PA، UVA/UVB، شماره رنگ، مدل، سری، رایحه یا ویژگی‌های واقعی محصول اگر کاربردی و مهم هستند، می‌توانند در ویژگی‌ها هم بیایند.
 - متن باید طبیعی، فروشگاهی و قابل انتشار باشد.
 - جمله‌های تکراری، هوش مصنوعی، اغراق‌آمیز یا بی‌ربط ننویس.
 - از Markdown، جدول، h2 و h3 استفاده نکن.
@@ -1905,7 +1906,7 @@ function normalizeProductData(data: ProductData): ProductData {
     altImageText: String(data.altImageText || '').replace(/<[^>]*>/g, '').trim(),
   };
 
-  return enrichAdvancedSeoAnalysis(cleanDuplicateMeasurementUnitsInProductData(ensureYoastSeoFields(cleanedData)));
+  return enrichAdvancedSeoAnalysis(cleanSpecsRepetitionInProductData(cleanDuplicateMeasurementUnitsInProductData(ensureYoastSeoFields(cleanedData))));
 }
 
 
@@ -1925,6 +1926,133 @@ function cleanDuplicateMeasurementUnitsInProductData(data: ProductData): Product
     altImageText: clean(data.altImageText),
   };
 }
+
+
+function normalizeSpecValueKey(value: string): string {
+  let output = normalizeDuplicateMeasurementUnits(String(value || ''))
+    .toLowerCase()
+    .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/میلی[\s\u200c]*لیتر|میل[\s\u200c]*لیتر|ml|ml\./gi, 'ml')
+    .replace(/گرم|gr|g\b/gi, 'g')
+    .replace(/کیلوگرم|kg/gi, 'kg')
+    .replace(/\s+/g, '')
+    .replace(/[،,:：؛\-]/g, '')
+    .trim();
+
+  return output;
+}
+
+function getSpecLabelAndValue(liInner: string): { label: string; value: string } {
+  const clean = String(liInner || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const parts = clean.split(/[:：]/);
+  if (parts.length >= 2) {
+    return {
+      label: parts[0].trim(),
+      value: parts.slice(1).join(':').trim(),
+    };
+  }
+
+  const match = clean.match(/^(حجم|وزن|تعداد|مدل|برند|نوع محصول|کاربرد|رایحه|طعم|رنگ|شماره رنگ|SPF|PA|محافظت)\s+(.+)$/i);
+  if (match) {
+    return { label: match[1].trim(), value: match[2].trim() };
+  }
+
+  return { label: clean, value: '' };
+}
+
+function isSpecLikeText(text: string): boolean {
+  const clean = String(text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // User preference: only volume must not be repeated in feature/benefit sections.
+  // SPF, PA, UVA/UVB, model, shade/color, scent, etc. may appear in features when meaningful.
+  if (/^حجم\s*[:：]?\s*/i.test(clean)) return true;
+
+  // Standalone volume measurement as a bullet should live in specs, not features.
+  if (/^(?:حجم)?\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s*(?:میلی[\s\u200c]*لیتر|میل[\s\u200c]*لیتر|ml|mL|لیتر|l)\b/i.test(clean)) return true;
+
+  return false;
+}
+
+function cleanSpecsRepetitionInHtml(html: string): string {
+  let output = String(html || '');
+
+  // 1) Inside "مشخصات محصول", keep one item per equivalent label/value.
+  const specsPattern = /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i;
+  let seenSpecKeys = new Set<string>();
+  let canonicalSpecLabels = new Set<string>();
+
+  output = output.replace(specsPattern, (_match, open, body, close) => {
+    const items = String(body || '').match(/<li>[\s\S]*?<\/li>/gi) || [];
+    const kept: string[] = [];
+
+    for (const item of items) {
+      const inner = item.replace(/^<li>/i, '').replace(/<\/li>$/i, '').trim();
+      const { label, value } = getSpecLabelAndValue(inner);
+      const normLabel = label.replace(/\s+/g, ' ').trim().toLowerCase();
+      const normValue = normalizeSpecValueKey(value || inner);
+
+      // Combine equivalent "حجم: 300 میلی‌لیتر" and "حجم: 300 ml".
+      const labelFamily =
+        /حجم/.test(normLabel) ? 'حجم' :
+        /وزن/.test(normLabel) ? 'وزن' :
+        /تعداد/.test(normLabel) ? 'تعداد' :
+        /spf/i.test(normLabel) ? 'spf' :
+        /pa/i.test(normLabel) ? 'pa' :
+        /مدل/.test(normLabel) ? 'مدل' :
+        /برند/.test(normLabel) ? 'برند' :
+        /نوع محصول/.test(normLabel) ? 'نوع محصول' :
+        normLabel;
+
+      const key = `${labelFamily}:${normValue}`;
+
+      // If same label family already exists with an equivalent value, skip duplicate.
+      if (seenSpecKeys.has(key)) continue;
+
+      // If it is same label family and current value is an English duplicate of previous Persian value, skip.
+      if ((labelFamily === 'حجم' || labelFamily === 'وزن') && canonicalSpecLabels.has(labelFamily)) {
+        const currentLooksEnglish = /\b(?:ml|mL|g|gr)\b/i.test(inner);
+        if (currentLooksEnglish) continue;
+      }
+
+      seenSpecKeys.add(key);
+      canonicalSpecLabels.add(labelFamily);
+      kept.push(`<li>${normalizeDuplicateMeasurementUnits(inner)}</li>`);
+    }
+
+    return `${open}${kept.join('')}${close}`;
+  });
+
+  // 2) Remove only volume-like bullets from non-spec sections. SPF and other real features may stay.
+  output = output.replace(/(<h5>(?!\s*📦\s*مشخصات\s*محصول)[\s\S]*?<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/gi, (_match, open, body, close) => {
+    const items = String(body || '').match(/<li>[\s\S]*?<\/li>/gi) || [];
+    const kept = items.filter((item) => {
+      const inner = item.replace(/^<li>/i, '').replace(/<\/li>$/i, '').trim();
+      return !isSpecLikeText(inner);
+    });
+    return `${open}${kept.join('')}${close}`;
+  });
+
+  return normalizeDuplicateMeasurementUnits(output)
+    .replace(/<ul>\s*<\/ul>/gi, '')
+    .replace(/>\s+</g, '><')
+    .trim();
+}
+
+function cleanSpecsRepetitionInProductData(data: ProductData): ProductData {
+  return {
+    ...data,
+    correctedProductName: normalizeDuplicateMeasurementUnits(data.correctedProductName),
+    fullDescription: cleanSpecsRepetitionInHtml(data.fullDescription),
+    shortDescription: normalizeDuplicateMeasurementUnits(data.shortDescription),
+    seoTitle: normalizeDuplicateMeasurementUnits(data.seoTitle),
+    focusKeyword: normalizeDuplicateMeasurementUnits(data.focusKeyword),
+    metaDescription: normalizeDuplicateMeasurementUnits(data.metaDescription),
+    altImageText: normalizeDuplicateMeasurementUnits(data.altImageText),
+  };
+}
+
+
 
 function stripHtmlForWordCount(html: string): string {
   return String(html || '')
@@ -2331,13 +2459,13 @@ async function callGitHubModel(
         throw new Error(`${model.id}: empty response from AI model.`);
       }
 
-      const rawGeneratedData = cleanDuplicateMeasurementUnitsInProductData(ensureVisibleSpecTokensInName(restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName, Boolean(productImage)), productName, briefDescription));
-      const generatedData = cleanDuplicateMeasurementUnitsInProductData(sanitizeCountryFieldsInProductData(ensureMohannadFullDescriptionDepth(
+      const rawGeneratedData = cleanSpecsRepetitionInProductData(cleanDuplicateMeasurementUnitsInProductData(ensureVisibleSpecTokensInName(restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName, Boolean(productImage)), productName, briefDescription)));
+      const generatedData = cleanSpecsRepetitionInProductData(cleanDuplicateMeasurementUnitsInProductData(sanitizeCountryFieldsInProductData(ensureMohannadFullDescriptionDepth(
         rawGeneratedData,
         productName,
         briefDescription,
         isNutsOrDriedFruit,
-      )));
+      ))));
       validateProductData(generatedData, isNutsOrDriedFruit);
       return generatedData;
     } catch (error) {
