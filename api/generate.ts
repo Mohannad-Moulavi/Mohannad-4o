@@ -111,7 +111,7 @@ const productSchema = {
     fullDescription: {
       type: 'string',
       description:
-        'توضیحات کامل محصول با فرمت HTML دقیقاً طبق قالب تعیین‌شده. باید با پاراگراف مقدمه شروع شود و سپس بخش‌های h5، ایموجی، ul/li، p و hr داشته باشد. اطلاعات قطعی مثل برند، مدل و حجم/وزن باید در بخش مشخصات محصول حفظ شود؛ کشور به هیچ شکل نوشته نشود.',
+        'توضیحات کامل محصول با فرمت HTML دقیقاً طبق قالب تعیین‌شده. باید با پاراگراف مقدمه شروع شود و سپس بخش‌های h5، ایموجی، ul/li، p و hr داشته باشد. اطلاعات قطعی مثل برند، مدل، حجم/وزن، oz/ml/g، SPF، PA، شماره رنگ، رایحه، طعم و نوع پوست/مو باید در بخش مشخصات محصول حفظ شود؛ کشور به هیچ شکل نوشته نشود.',
     },
     shortDescription: {
       type: 'string',
@@ -296,6 +296,8 @@ const standardDescriptionPrompt = `
 <li>مدل: اگر مشخص است</li>
 <li>نوع محصول: دسته‌بندی دقیق محصول</li>
 <li>حجم/وزن/تعداد/رنگ/رایحه/طعم: فقط موارد قطعی</li>
+<li>SPF/PA/UVA/UVB/شماره رنگ/نوع پوست یا مو: فقط اگر روی عکس یا ورودی مشخص است</li>
+<li>واحدهای روی بسته‌بندی مثل oz/ml/g: فقط اگر مشخص است</li>
 <li>کاربرد: کاربرد اصلی محصول</li>
 </ul>
 <hr />
@@ -308,6 +310,7 @@ const standardDescriptionPrompt = `
 - پوشاک: «🧵 جنس و طراحی»، «📏 راهنمای سایز»، «🧺 روش شستشو و نگهداری»، «📦 مشخصات محصول» را بنویس.
 
 # قوانین مهم
+- اگر روی عکس یا ورودی کاربر جزئیاتی مثل SPF، PA، UVA/UVB، 10.4 oz، ml، g، شماره رنگ، رایحه، نوع پوست/مو یا ترکیبات شاخص وجود دارد، باید در نام محصول، توضیحات و مشخصات محصول بیاید؛ اما اگر وجود ندارد، اجباری یا ساختگی ننویس.
 - متن باید طبیعی، فروشگاهی و قابل انتشار باشد.
 - جمله‌های تکراری، هوش مصنوعی، اغراق‌آمیز یا بی‌ربط ننویس.
 - از Markdown، جدول، h2 و h3 استفاده نکن.
@@ -659,6 +662,10 @@ function buildUserPrompt(
 - اگر تصویر محصول ارسال شده و متن/لوگو/ظاهر بسته‌بندی با نام خام کاربر فرق دارد، تصویر و متن روی بسته‌بندی منبع اصلی است.
 - نام خام کاربر فقط راهنماست و ممکن است غلط، تستی یا کاملاً نامرتبط باشد.
 - کشور را به هیچ شکل در خروجی ننویس؛ حتی اگر روی بسته‌بندی مشخص باشد.
+- جزئیات قابل مشاهده روی عکس مثل حجم، وزن، اونس، میلی‌لیتر، گرم، SPF، PA+/PA++/PA+++، UVA/UVB، شماره رنگ، سری، مدل، رایحه، طعم، نوع پوست/مو، ترکیبات شاخص و ویژگی‌های روی بسته‌بندی را حتماً بخوان.
+- این جزئیات را فقط اگر واقعاً روی عکس یا در متن کاربر مشخص بود بنویس؛ برای محصولی که این موارد را ندارد، اجباری یا ساختگی اضافه نکن.
+- برای محصولات آرایشی/بهداشتی اگر روی بسته‌بندی SPF، حجم مثل 10.4 oz، 300 ml، شماره رنگ، نوع پوست یا ترکیب شاخص نوشته شده، باید در correctedProductName، fullDescription و بخش 📦 مشخصات محصول بیاید.
+- برای محصولات غیرآرایشی هم همین قانون برقرار است: هر عدد/واحد/ویژگی مهم روی بسته‌بندی، اگر قابل خواندن بود، در مشخصات و توضیحات ذکر شود؛ اما اگر نبود، حدس نزن.
 - اگر کاربر نام الکی نوشته اما تصویر محصول واضح است، محصول را بر اساس تصویر تشخیص بده و نام را اصلاح کن.
 - مثال: اگر نام خام هر چیزی بود ولی تصویر آب زمزم بود، خروجی باید آب زمزم/نوشیدنی/مواد غذایی باشد، نه آرایشی یا نام خام کاربر.
 - دسته‌بندی، توضیحات، کلیدواژه‌ها و لینک داخلی باید بر اساس محصول واقعیِ تشخیص‌داده‌شده از تصویر/بسته‌بندی باشد.`;
@@ -675,7 +682,7 @@ function buildUserPrompt(
 7. برای لینک داخلی فقط از دسته‌بندی‌های واقعی سایت noon-valqalam.ir استفاده کن. href="#" ننویس؛ لینک نهایی توسط کد از لیست دسته‌بندی‌های واقعی سایت جایگزین می‌شود.`;
 
   if (productImage && imageAttachedForThisModel) {
-    userPrompt += '\n\nتصویر محصول هم ارسال شده است. تصویر را دقیق بخوان: متن روی بسته‌بندی، لوگو، برند، تعداد، وزن/حجم، مدل، رنگ، رایحه/طعم، کاربرد و جزئیات ظاهری را استخراج کن و در نام اصلاح‌شده و مشخصات محصول لحاظ کن. اگر نام خام کاربر با تصویر فرق داشت، تصویر را منبع معتبرتر بدان و نام محصول را بر اساس تصویر اصلاح کن.';
+    userPrompt += '\n\nتصویر محصول هم ارسال شده است. تصویر را دقیق بخوان: متن روی بسته‌بندی، لوگو، برند، تعداد، وزن/حجم، واحدهایی مثل oz/ml/g، مدل، SPF، PA، UVA/UVB، شماره رنگ، رنگ، رایحه/طعم، نوع پوست/مو، ترکیبات شاخص، کاربرد و جزئیات ظاهری را استخراج کن و در نام اصلاح‌شده، توضیحات و مشخصات محصول لحاظ کن؛ اما فقط اگر واقعاً قابل مشاهده یا قابل استنباط مطمئن از عکس بود. اگر نام خام کاربر با تصویر فرق داشت، تصویر را منبع معتبرتر بدان و نام محصول را بر اساس تصویر اصلاح کن.';
   } else if (productImage) {
     userPrompt += '\n\nکاربر تصویر ارسال کرده، اما این مدل fallback متنی است و تصویر را نمی‌بیند. بنابراین فقط بر اساس نام و توضیحات اولیه بهترین خروجی سئویی را بساز و جزئیات نامطمئن تصویر را اختراع نکن.';
   }
@@ -849,6 +856,16 @@ function extractStructuredInputDetails(rawProductName: string, briefDescription:
     { label: 'رنگ', regex: /^\s*رنگ\s*[:：\-]\s*(.+)$/i },
     { label: 'رایحه', regex: /^\s*رایحه\s*[:：\-]\s*(.+)$/i },
     { label: 'طعم', regex: /^\s*طعم\s*[:：\-]\s*(.+)$/i },
+    
+    { label: 'SPF', regex: /\bSPF\s*[:：\-]?\s*([0-9]{2,3}\+?)\b/i },
+    { label: 'PA', regex: /\bPA\s*[:：\-]?\s*(\+{1,4})\b/i },
+    { label: 'محافظت', regex: /\b(UVA\/UVB|UVA|UVB)\b/i },
+    { label: 'حجم/وزن', regex: /\b([0-9]+(?:\.[0-9]+)?\s*(?:fl\s*)?oz)\b/i },
+    { label: 'حجم', regex: /\b([0-9]+(?:\.[0-9]+)?\s*(?:ml|mL|میل(?:ی)?\s*لیتر))\b/i },
+    { label: 'وزن', regex: /\b([0-9]+(?:\.[0-9]+)?\s*(?:g|gr|گرم|کیلوگرم))\b/i },
+    { label: 'شماره رنگ', regex: /(?:شماره\s*رنگ|رنگ\s*شماره|shade|color)\s*[:：\-]?\s*([A-Za-z0-9آ-ی\s\-\/]+)$/i },
+    { label: 'نوع پوست', regex: /(?:نوع\s*پوست|مناسب\s*پوست)\s*[:：\-]?\s*([آ-ی\s]+)$/i },
+    { label: 'نوع مو', regex: /(?:نوع\s*مو|مناسب\s*مو)\s*[:：\-]?\s*([آ-ی\s]+)$/i },
     { label: 'نوع محصول', regex: /^\s*نوع\s*محصول\s*[:：\-]\s*(.+)$/i },
   ];
 
@@ -1757,6 +1774,58 @@ function ensureYoastSeoFields(data: ProductData): ProductData {
   };
 }
 
+
+function extractVisibleSpecTokensFromInput(rawProductName: string, briefDescription: string): string[] {
+  const source = `${rawProductName || ''} ${briefDescription || ''}`;
+  const patterns: RegExp[] = [
+    /\bSPF\s*[:：\-]?\s*[0-9]{2,3}\+?\b/gi,
+    /\bPA\s*[:：\-]?\s*\+{1,4}\b/gi,
+    /\bUVA\/UVB\b/gi,
+    /\b[0-9]+(?:\.[0-9]+)?\s*(?:fl\s*)?oz\b/gi,
+    /\b[0-9]+(?:\.[0-9]+)?\s*(?:ml|mL|g|gr)\b/g,
+    /[0-9]+(?:\.[0-9]+)?\s*(?:میلی\s*لیتر|میل\s*لیتر|گرم|کیلوگرم)/g,
+  ];
+
+  const found: string[] = [];
+  for (const pattern of patterns) {
+    const matches = source.match(pattern) || [];
+    for (const match of matches) {
+      const clean = String(match || '').replace(/\s+/g, ' ').trim();
+      if (clean && !found.some((item) => item.toLowerCase() === clean.toLowerCase())) {
+        found.push(clean);
+      }
+    }
+  }
+
+  return found;
+}
+
+function ensureVisibleSpecTokensInName(data: ProductData, rawProductName: string, briefDescription: string): ProductData {
+  const tokens = extractVisibleSpecTokensFromInput(rawProductName, briefDescription);
+  if (tokens.length === 0) return data;
+
+  let name = String(data.correctedProductName || '').trim();
+  let focus = String(data.focusKeyword || '').trim();
+  let title = String(data.seoTitle || '').trim();
+  let alt = String(data.altImageText || '').trim();
+
+  for (const token of tokens) {
+    const tokenNorm = token.toLowerCase();
+    if (name && !name.toLowerCase().includes(tokenNorm)) name = `${name} ${token}`;
+    if (focus && !focus.toLowerCase().includes(tokenNorm) && /spf|pa|oz|ml|g|گرم|لیتر/i.test(token)) focus = `${focus} ${token}`;
+    if (title && !title.toLowerCase().includes(tokenNorm) && title.length < 58) title = `${title} ${token}`.slice(0, 70);
+    if (alt && !alt.toLowerCase().includes(tokenNorm) && alt.length < 100) alt = `${alt} ${token}`;
+  }
+
+  return {
+    ...data,
+    correctedProductName: name || data.correctedProductName,
+    focusKeyword: focus || data.focusKeyword,
+    seoTitle: title || data.seoTitle,
+    altImageText: alt || data.altImageText,
+  };
+}
+
 function normalizeProductData(data: ProductData): ProductData {
   const cleanedData: ProductData = {
     ...data,
@@ -2180,7 +2249,7 @@ async function callGitHubModel(
         throw new Error(`${model.id}: empty response from AI model.`);
       }
 
-      const rawGeneratedData = restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName, Boolean(productImage));
+      const rawGeneratedData = ensureVisibleSpecTokensInName(restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName, Boolean(productImage)), productName, briefDescription);
       const generatedData = sanitizeCountryFieldsInProductData(ensureMohannadFullDescriptionDepth(
         rawGeneratedData,
         productName,
