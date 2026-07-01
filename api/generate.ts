@@ -1977,50 +1977,77 @@ function isSpecLikeText(text: string): boolean {
 function cleanSpecsRepetitionInHtml(html: string): string {
   let output = String(html || '');
 
-  // 1) Inside "مشخصات محصول", keep one item per equivalent label/value.
+  // 1) Inside "مشخصات محصول", keep one clean item per spec label.
+  // For volume, keep Persian unit when both Persian and English exist.
   const specsPattern = /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i;
-  let seenSpecKeys = new Set<string>();
-  let canonicalSpecLabels = new Set<string>();
 
   output = output.replace(specsPattern, (_match, open, body, close) => {
     const items = String(body || '').match(/<li>[\s\S]*?<\/li>/gi) || [];
-    const kept: string[] = [];
+    const bestByLabel = new Map<string, string>();
+    const order: string[] = [];
+
+    const getLabelFamily = (label: string): string => {
+      const normLabel = String(label || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (/حجم/.test(normLabel)) return 'حجم';
+      if (/وزن/.test(normLabel)) return 'وزن';
+      if (/تعداد/.test(normLabel)) return 'تعداد';
+      if (/spf/i.test(normLabel)) return 'SPF';
+      if (/pa/i.test(normLabel)) return 'PA';
+      if (/مدل/.test(normLabel)) return 'مدل';
+      if (/برند/.test(normLabel)) return 'برند';
+      if (/نوع\s*محصول/.test(normLabel)) return 'نوع محصول';
+      if (/کاربرد/.test(normLabel)) return 'کاربرد';
+      if (/رایحه/.test(normLabel)) return 'رایحه';
+      if (/طعم/.test(normLabel)) return 'طعم';
+      if (/رنگ/.test(normLabel)) return 'رنگ';
+      return normLabel;
+    };
+
+    const scoreItem = (labelFamily: string, item: string): number => {
+      let score = 0;
+      const clean = normalizeDuplicateMeasurementUnits(item);
+
+      // Prefer Persian units for Persian output.
+      if (/میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|گرم|کیلوگرم/.test(clean)) score += 20;
+      if (/\b(?:ml|mL|g|gr|kg)\b/.test(clean)) score -= 10;
+
+      // Prefer item that actually has a value after colon.
+      if (/[:：]\s*\S+/.test(clean)) score += 5;
+
+      // For volume, a Persian volume line must beat English duplicate.
+      if (labelFamily === 'حجم' && /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(clean)) score += 50;
+      if (labelFamily === 'حجم' && /\b(?:ml|mL)\b/.test(clean)) score -= 50;
+
+      return score;
+    };
 
     for (const item of items) {
-      const inner = item.replace(/^<li>/i, '').replace(/<\/li>$/i, '').trim();
-      const { label, value } = getSpecLabelAndValue(inner);
-      const normLabel = label.replace(/\s+/g, ' ').trim().toLowerCase();
-      const normValue = normalizeSpecValueKey(value || inner);
+      let inner = item.replace(/^<li>/i, '').replace(/<\/li>$/i, '').trim();
+      inner = normalizeDuplicateMeasurementUnits(inner);
+      if (!inner) continue;
 
-      // Combine equivalent "حجم: 300 میلی‌لیتر" and "حجم: 300 ml".
-      const labelFamily =
-        /حجم/.test(normLabel) ? 'حجم' :
-        /وزن/.test(normLabel) ? 'وزن' :
-        /تعداد/.test(normLabel) ? 'تعداد' :
-        /spf/i.test(normLabel) ? 'spf' :
-        /pa/i.test(normLabel) ? 'pa' :
-        /مدل/.test(normLabel) ? 'مدل' :
-        /برند/.test(normLabel) ? 'برند' :
-        /نوع محصول/.test(normLabel) ? 'نوع محصول' :
-        normLabel;
+      const { label } = getSpecLabelAndValue(inner);
+      const labelFamily = getLabelFamily(label || inner);
+      const currentItem = `<li>${inner}</li>`;
 
-      const key = `${labelFamily}:${normValue}`;
-
-      // If same label family already exists with an equivalent value, skip duplicate.
-      if (seenSpecKeys.has(key)) continue;
-
-      // If it is same label family and current value is an English duplicate of previous Persian value, skip.
-      if ((labelFamily === 'حجم' || labelFamily === 'وزن') && canonicalSpecLabels.has(labelFamily)) {
-        const currentLooksEnglish = /\b(?:ml|mL|g|gr)\b/i.test(inner);
-        if (currentLooksEnglish) continue;
+      if (!bestByLabel.has(labelFamily)) {
+        bestByLabel.set(labelFamily, currentItem);
+        order.push(labelFamily);
+        continue;
       }
 
-      seenSpecKeys.add(key);
-      canonicalSpecLabels.add(labelFamily);
-      kept.push(`<li>${normalizeDuplicateMeasurementUnits(inner)}</li>`);
+      const previous = bestByLabel.get(labelFamily) || '';
+      if (scoreItem(labelFamily, currentItem) > scoreItem(labelFamily, previous)) {
+        bestByLabel.set(labelFamily, currentItem);
+      }
     }
 
-    return `${open}${kept.join('')}${close}`;
+    const kept = order
+      .map((label) => bestByLabel.get(label))
+      .filter(Boolean)
+      .join('');
+
+    return `${open}${kept}${close}`;
   });
 
   // 2) Remove only volume-like bullets from non-spec sections. SPF and other real features may stay.
@@ -2039,11 +2066,50 @@ function cleanSpecsRepetitionInHtml(html: string): string {
     .trim();
 }
 
+
+function removeDuplicateVolumeLinesInSpecs(html: string): string {
+  return String(html || '').replace(
+    /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i,
+    (_match, open, body, close) => {
+      const items = String(body || '').match(/<li>[\s\S]*?<\/li>/gi) || [];
+      let chosenVolume = '';
+      const others: string[] = [];
+
+      for (const item of items) {
+        const inner = normalizeDuplicateMeasurementUnits(item.replace(/^<li>/i, '').replace(/<\/li>$/i, '').trim());
+        if (/^حجم\s*[:：]/i.test(inner)) {
+          if (!chosenVolume) {
+            chosenVolume = `<li>${inner}</li>`;
+          } else {
+            const currentIsPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(inner);
+            const chosenIsPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(chosenVolume);
+            if (currentIsPersian && !chosenIsPersian) chosenVolume = `<li>${inner}</li>`;
+          }
+        } else {
+          others.push(`<li>${inner}</li>`);
+        }
+      }
+
+      const outputItems: string[] = [];
+      for (const item of others) {
+        outputItems.push(item);
+        if (/^<li>\s*نوع\s*محصول\s*[:：]/i.test(item) && chosenVolume) {
+          outputItems.push(chosenVolume);
+          chosenVolume = '';
+        }
+      }
+      if (chosenVolume) outputItems.push(chosenVolume);
+
+      return `${open}${outputItems.join('')}${close}`;
+    }
+  );
+}
+
 function cleanSpecsRepetitionInProductData(data: ProductData): ProductData {
   return {
     ...data,
     correctedProductName: normalizeDuplicateMeasurementUnits(data.correctedProductName),
-    fullDescription: cleanSpecsRepetitionInHtml(data.fullDescription),
+    fullDescription: removeDuplicateVolumeLinesInSpecs(cleanSpecsRepetitionInHtml(data.fullDescription)),
     shortDescription: normalizeDuplicateMeasurementUnits(data.shortDescription),
     seoTitle: normalizeDuplicateMeasurementUnits(data.seoTitle),
     focusKeyword: normalizeDuplicateMeasurementUnits(data.focusKeyword),
