@@ -664,6 +664,8 @@ function buildUserPrompt(
 - کشور را به هیچ شکل در خروجی ننویس؛ حتی اگر روی بسته‌بندی مشخص باشد.
 - جزئیات قابل مشاهده روی عکس مثل حجم، وزن، اونس، میلی‌لیتر، گرم، SPF، PA+/PA++/PA+++، UVA/UVB، شماره رنگ، سری، مدل، رایحه، طعم، نوع پوست/مو، ترکیبات شاخص و ویژگی‌های روی بسته‌بندی را حتماً بخوان.
 - این جزئیات را فقط اگر واقعاً روی عکس یا در متن کاربر مشخص بود بنویس؛ برای محصولی که این موارد را ندارد، اجباری یا ساختگی اضافه نکن.
+- اگر یک مقدار هم به فارسی و هم به انگلیسی/اختصاری نوشته شده بود، فقط یک‌بار بنویس. برای متن فارسی، واحد فارسی را ترجیح بده: «300 میلی‌لیتر» نه «300 میلی‌لیتر 300 ml»، «250 گرم» نه «250 گرم 250 g».
+- اگر فقط واحد انگلیسی روی عکس بود و معادل فارسی در ورودی نبود، همان را نگه دار؛ مثل «10.4 oz». اما اگر معادل فارسی و انگلیسی یک عدد کنار هم بودند، تکراری ننویس.
 - برای محصولات آرایشی/بهداشتی اگر روی بسته‌بندی SPF، حجم مثل 10.4 oz، 300 ml، شماره رنگ، نوع پوست یا ترکیب شاخص نوشته شده، باید در correctedProductName، fullDescription و بخش 📦 مشخصات محصول بیاید.
 - برای محصولات غیرآرایشی هم همین قانون برقرار است: هر عدد/واحد/ویژگی مهم روی بسته‌بندی، اگر قابل خواندن بود، در مشخصات و توضیحات ذکر شود؛ اما اگر نبود، حدس نزن.
 - اگر کاربر نام الکی نوشته اما تصویر محصول واضح است، محصول را بر اساس تصویر تشخیص بده و نام را اصلاح کن.
@@ -1775,8 +1777,42 @@ function ensureYoastSeoFields(data: ProductData): ProductData {
 }
 
 
+
+function normalizeDuplicateMeasurementUnits(text: string): string {
+  let output = String(text || '');
+
+  // Same value repeated in Persian + English units: keep Persian for Persian product copy.
+  output = output
+    .replace(/\b(\d+(?:[.,]\d+)?)\s*(?:میلی\s*لیتر|میل\s*لیتر)\s+\1\s*(?:ml|mL)\b/gi, '$1 میلی‌لیتر')
+    .replace(/\b(\d+(?:[.,]\d+)?)\s*(?:ml|mL)\s+\1\s*(?:میلی\s*لیتر|میل\s*لیتر)\b/gi, '$1 میلی‌لیتر')
+    .replace(/\b(\d+(?:[.,]\d+)?)\s*گرم\s+\1\s*(?:g|gr)\b/gi, '$1 گرم')
+    .replace(/\b(\d+(?:[.,]\d+)?)\s*(?:g|gr)\s+\1\s*گرم\b/gi, '$1 گرم')
+    .replace(/\b(\d+(?:[.,]\d+)?)\s*کیلوگرم\s+\1\s*(?:kg)\b/gi, '$1 کیلوگرم')
+    .replace(/\b(\d+(?:[.,]\d+)?)\s*(?:kg)\s+\1\s*کیلوگرم\b/gi, '$1 کیلوگرم');
+
+  // Common adjacent duplicate tokens from model/image text extraction.
+  output = output
+    .replace(/\b(SPF\s*\d{2,3}\+?)\s+\1\b/gi, '$1')
+    .replace(/\b(PA\s*\+{1,4})\s+\1\b/gi, '$1')
+    .replace(/\b(UVA\/UVB)\s+\1\b/gi, '$1')
+    .replace(/(\d+(?:[.,]\d+)?\s*(?:oz|fl\s*oz))\s+\1\b/gi, '$1');
+
+  return output
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([،؛:.])/g, '$1')
+    .trim();
+}
+
+function normalizeDuplicateMeasurementUnitsInHtml(html: string): string {
+  return normalizeDuplicateMeasurementUnits(String(html || ''));
+}
+
 function extractVisibleSpecTokensFromInput(rawProductName: string, briefDescription: string): string[] {
-  const source = `${rawProductName || ''} ${briefDescription || ''}`;
+  const source = normalizeDuplicateMeasurementUnits(`${rawProductName || ''} ${briefDescription || ''}`);
+
+  const hasPersianMl = (num: string) => new RegExp(`${num.replace('.', '\\.')}\\s*(?:میلی\\s*لیتر|میل\\s*لیتر)`, 'i').test(source);
+  const hasPersianGram = (num: string) => new RegExp(`${num.replace('.', '\\.')}\\s*(?:گرم)`, 'i').test(source);
+
   const patterns: RegExp[] = [
     /\bSPF\s*[:：\-]?\s*[0-9]{2,3}\+?\b/gi,
     /\bPA\s*[:：\-]?\s*\+{1,4}\b/gi,
@@ -1790,7 +1826,17 @@ function extractVisibleSpecTokensFromInput(rawProductName: string, briefDescript
   for (const pattern of patterns) {
     const matches = source.match(pattern) || [];
     for (const match of matches) {
-      const clean = String(match || '').replace(/\s+/g, ' ').trim();
+      let clean = String(match || '').replace(/\s+/g, ' ').trim();
+      if (!clean) continue;
+
+      const numMatch = clean.match(/^([0-9]+(?:\.[0-9]+)?)/);
+      const num = numMatch ? numMatch[1] : '';
+
+      // If same value exists as Persian unit, do not also add English ml/g/gr.
+      if (num && /\b(?:ml|mL)\b/.test(clean) && hasPersianMl(num)) continue;
+      if (num && /\b(?:g|gr)\b/.test(clean) && hasPersianGram(num)) continue;
+
+      clean = normalizeDuplicateMeasurementUnits(clean);
       if (clean && !found.some((item) => item.toLowerCase() === clean.toLowerCase())) {
         found.push(clean);
       }
@@ -1840,9 +1886,25 @@ function normalizeProductData(data: ProductData): ProductData {
     altImageText: String(data.altImageText || '').replace(/<[^>]*>/g, '').trim(),
   };
 
-  return enrichAdvancedSeoAnalysis(ensureYoastSeoFields(cleanedData));
+  return enrichAdvancedSeoAnalysis(cleanDuplicateMeasurementUnitsInProductData(ensureYoastSeoFields(cleanedData)));
 }
 
+
+
+function cleanDuplicateMeasurementUnitsInProductData(data: ProductData): ProductData {
+  return {
+    ...data,
+    correctedProductName: normalizeDuplicateMeasurementUnits(data.correctedProductName),
+    englishProductName: normalizeDuplicateMeasurementUnits(data.englishProductName),
+    fullDescription: normalizeDuplicateMeasurementUnitsInHtml(data.fullDescription),
+    shortDescription: normalizeDuplicateMeasurementUnits(data.shortDescription),
+    seoTitle: normalizeDuplicateMeasurementUnits(data.seoTitle),
+    slug: data.slug,
+    focusKeyword: normalizeDuplicateMeasurementUnits(data.focusKeyword),
+    metaDescription: normalizeDuplicateMeasurementUnits(data.metaDescription),
+    altImageText: normalizeDuplicateMeasurementUnits(data.altImageText),
+  };
+}
 
 function stripHtmlForWordCount(html: string): string {
   return String(html || '')
@@ -2249,13 +2311,13 @@ async function callGitHubModel(
         throw new Error(`${model.id}: empty response from AI model.`);
       }
 
-      const rawGeneratedData = ensureVisibleSpecTokensInName(restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName, Boolean(productImage)), productName, briefDescription);
-      const generatedData = sanitizeCountryFieldsInProductData(ensureMohannadFullDescriptionDepth(
+      const rawGeneratedData = cleanDuplicateMeasurementUnitsInProductData(ensureVisibleSpecTokensInName(restoreRawIdentityIfModelSwappedProduct(normalizeProductData(extractJson(text)), productName, Boolean(productImage)), productName, briefDescription));
+      const generatedData = cleanDuplicateMeasurementUnitsInProductData(sanitizeCountryFieldsInProductData(ensureMohannadFullDescriptionDepth(
         rawGeneratedData,
         productName,
         briefDescription,
         isNutsOrDriedFruit,
-      ));
+      )));
       validateProductData(generatedData, isNutsOrDriedFruit);
       return generatedData;
     } catch (error) {
