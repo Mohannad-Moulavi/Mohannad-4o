@@ -895,35 +895,227 @@ function hasExactDetailPair(output: string, detail: InputDetail): boolean {
   return pairRegex.test(output);
 }
 
+
+function hasAnyVolumeField(output: string): boolean {
+  const text = String(output || '');
+  return /(?:<li>\s*)?حجم\s*[:：]/i.test(text);
+}
+
+function normalizeVolumeValueForCompare(value: string): string {
+  return normalizeDuplicateMeasurementUnits(String(value || ''))
+    .toLowerCase()
+    .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/میلی[\s\u200c]*لیتر|میل[\s\u200c]*لیتر|ml|mL/gi, 'ml')
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+function dedupeStructuredDetails(details: InputDetail[]): InputDetail[] {
+  const output: InputDetail[] = [];
+  const seen = new Set<string>();
+  let chosenVolume: InputDetail | null = null;
+
+  for (const detail of details) {
+    const label = String(detail.label || '').trim();
+    const value = normalizeDuplicateMeasurementUnits(String(detail.value || '').trim());
+    if (!label || !value) continue;
+
+    if (/^حجم$/i.test(label)) {
+      const current: InputDetail = { label, value };
+      if (!chosenVolume) {
+        chosenVolume = current;
+      } else {
+        const currentPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(value);
+        const chosenPersian = /میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(chosenVolume.value);
+        const sameValue = normalizeVolumeValueForCompare(value) === normalizeVolumeValueForCompare(chosenVolume.value);
+        if (currentPersian && (!chosenPersian || sameValue)) {
+          chosenVolume = current;
+        }
+      }
+      continue;
+    }
+
+    const key = `${label}:${value}`.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push({ label, value });
+  }
+
+  if (chosenVolume) {
+    // Put volume after product type if possible.
+    const typeIndex = output.findIndex((detail) => /نوع\s*محصول/i.test(detail.label));
+    if (typeIndex >= 0) {
+      output.splice(typeIndex + 1, 0, chosenVolume);
+    } else {
+      output.push(chosenVolume);
+    }
+  }
+
+  return output;
+}
+
+
+
+function stripLeakedOutputSectionsFromFullDescription(html: string): string {
+  let output = String(html || '');
+
+  // If the model leaks the whole app output into fullDescription, cut everything after the next output field.
+  output = output.replace(
+    /(?:\n|<br\s*\/?>|\s)*(?:توضیحات\s*کوتاه\s*(?:\(|（)?\s*Short\s*Desc[\s\S]*|کلیدواژه\s*کانونی[\s\S]*|عنوان\s*سئو[\s\S]*|نامک\s*(?:\(|（)?\s*Slug[\s\S]*|توضیحات\s*متا[\s\S]*|متن\s*جایگزین\s*تصویر[\s\S]*|کلیدواژه‌های\s*مرتبط[\s\S]*)$/i,
+    ''
+  );
+
+  return output.trim();
+}
+
+function collectSpecPairsFromText(text: string): InputDetail[] {
+  const cleanText = String(text || '')
+    .replace(/<li>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '\n');
+
+  const lines = cleanText.split(/\r?\n/);
+  const pairs: InputDetail[] = [];
+
+  for (const raw of lines) {
+    const line = normalizeDuplicateMeasurementUnits(raw).trim();
+    if (!line) continue;
+
+    const match = line.match(/^(برند|مدل|نوع\s*محصول|حجم|وزن|تعداد|کاربرد|ترکیبات\s*شاخص|SPF|PA|محافظت|شماره\s*رنگ|رنگ|رایحه|طعم|نوع\s*پوست|نوع\s*مو)\s*[:：]\s*(.+)$/i);
+    if (!match) continue;
+
+    const label = match[1].replace(/\s+/g, ' ').trim();
+    const value = normalizeDuplicateMeasurementUnits(match[2].trim());
+    if (!value) continue;
+    if (/کشور|مبدا|مبدأ|سازنده/i.test(label)) continue;
+
+    pairs.push({ label, value });
+  }
+
+  return pairs;
+}
+
+function canonicalSpecLabel(label: string): string {
+  const clean = String(label || '').replace(/\s+/g, ' ').trim();
+  if (/^نوع\s*محصول$/i.test(clean)) return 'نوع محصول';
+  if (/^ترکیبات\s*شاخص$/i.test(clean)) return 'ترکیبات شاخص';
+  if (/^شماره\s*رنگ$/i.test(clean)) return 'شماره رنگ';
+  return clean;
+}
+
+function specFamily(label: string): string {
+  const clean = canonicalSpecLabel(label).toLowerCase();
+  if (/حجم/.test(clean)) return 'حجم';
+  if (/وزن/.test(clean)) return 'وزن';
+  if (/تعداد/.test(clean)) return 'تعداد';
+  if (/^spf$/i.test(clean)) return 'SPF';
+  if (/^pa$/i.test(clean)) return 'PA';
+  return canonicalSpecLabel(label);
+}
+
+function scoreSpecValue(family: string, value: string): number {
+  let score = 0;
+  const clean = normalizeDuplicateMeasurementUnits(value);
+  if (family === 'حجم') {
+    if (/میلی‌لیتر|میلی\s*لیتر|میل\s*لیتر|لیتر/.test(clean)) score += 100;
+    if (/\b(?:ml|mL)\b/.test(clean)) score -= 50;
+  }
+  if (/^[^،.]{1,120}$/.test(clean)) score += 5;
+  return score;
+}
+
+function mergeSpecPairs(pairs: InputDetail[]): InputDetail[] {
+  const order = ['برند', 'مدل', 'نوع محصول', 'حجم', 'وزن', 'تعداد', 'SPF', 'PA', 'محافظت', 'شماره رنگ', 'رنگ', 'رایحه', 'طعم', 'نوع پوست', 'نوع مو', 'ترکیبات شاخص', 'کاربرد'];
+  const map = new Map<string, InputDetail>();
+
+  for (const pair of pairs) {
+    const label = canonicalSpecLabel(pair.label);
+    let value = normalizeDuplicateMeasurementUnits(pair.value);
+    if (!label || !value) continue;
+    if (/کشور|مبدا|مبدأ|سازنده/i.test(label)) continue;
+
+    const family = specFamily(label);
+    const current: InputDetail = { label: family, value };
+
+    const previous = map.get(family);
+    if (!previous || scoreSpecValue(family, current.value) > scoreSpecValue(family, previous.value)) {
+      map.set(family, current);
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    const ai = order.indexOf(specFamily(a.label));
+    const bi = order.indexOf(specFamily(b.label));
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+}
+
+function removeAllSpecsSectionsFromDescription(html: string): string {
+  let output = String(html || '');
+
+  // Remove standard HTML specs blocks.
+  output = output.replace(
+    /<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*(?:<ul>[\s\S]*?<\/ul>)?/gi,
+    ''
+  );
+
+  // Remove malformed HTML/plain mixed blocks from specs header until next section marker.
+  output = output.replace(
+    /(?:^|\n|\s|<p>)\s*📦\s*مشخصات\s*محصول\s*:?\s*(?:<\/p>)?[\s\S]*?(?=(?:<hr\s*\/?>|<h5>|توضیحات\s*کوتاه|کلیدواژه\s*کانونی|عنوان\s*سئو|نامک|توضیحات\s*متا|متن\s*جایگزین|کلیدواژه‌های\s*مرتبط|$))/gi,
+    ''
+  );
+
+  // Remove remaining loose volume-only lines outside canonical specs.
+  output = output.replace(/(?:^|\n)\s*حجم\s*[:：][^\n<]+/gi, '');
+
+  return output
+    .replace(/<ul>\s*<\/ul>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/>\s+</g, '><')
+    .trim();
+}
+
+function buildCanonicalSpecsSection(pairs: InputDetail[]): string {
+  const merged = mergeSpecPairs(pairs);
+  if (merged.length === 0) return '';
+
+  const items = merged
+    .map((detail) => `<li>${escapeHtmlText(canonicalSpecLabel(detail.label))}: ${escapeHtmlText(normalizeDuplicateMeasurementUnits(detail.value))}</li>`)
+    .join('');
+
+  return `<hr /><h5>📦 مشخصات محصول:</h5><ul>${items}</ul>`;
+}
+
+function rebuildSpecsSectionFromData(
+  fullDescription: string,
+  rawProductName: string,
+  briefDescription: string,
+): string {
+  const original = String(fullDescription || '');
+  const withoutLeaks = stripLeakedOutputSectionsFromFullDescription(original);
+
+  const modelPairs = collectSpecPairsFromText(withoutLeaks);
+  const inputPairs = dedupeStructuredDetails(
+    extractStructuredInputDetails(rawProductName, briefDescription)
+      .filter((detail) => !/کشور|مبدا|مبدأ|سازنده/i.test(detail.label))
+  );
+
+  const allPairs = mergeSpecPairs([...modelPairs, ...inputPairs]);
+  const cleanDescription = removeAllSpecsSectionsFromDescription(withoutLeaks);
+  const specsSection = buildCanonicalSpecsSection(allPairs);
+
+  return hardRemoveExtraVolumeSpecsUniversal(`${cleanDescription}${specsSection ? '\n' + specsSection : ''}`);
+}
+
+
 function ensureKnownDetailsInDescription(
   html: string,
   rawProductName: string,
   briefDescription: string,
 ): string {
-  const details = extractStructuredInputDetails(rawProductName, briefDescription)
-    .filter((detail) => !/کشور|مبدا|مبدأ|سازنده/i.test(detail.label));
-  if (details.length === 0) return html;
-
-  let output = String(html || '').trim();
-  if (!output) return output;
-
-  // These details are source-of-truth fields. They must appear in the specs list with their label,
-  // even if the model mentioned the value somewhere else in prose.
-  const missingDetails = details.filter((detail) => !hasExactDetailPair(output, detail));
-
-  if (missingDetails.length === 0) return output;
-
-  const detailItems = missingDetails
-    .map((detail) => `  <li>${escapeHtmlText(detail.label)}: ${escapeHtmlText(detail.value)}</li>`)
-    .join('\n');
-
-  const specsPattern = /(<h5>\s*📦\s*مشخصات\s*محصول\s*:?\s*<\/h5>\s*<ul>)([\s\S]*?)(<\/ul>)/i;
-  if (specsPattern.test(output)) {
-    return output.replace(specsPattern, (_match, open, body, close) => `${open}${String(body).trimEnd()}\n${detailItems}\n${close}`);
-  }
-
-  const fallbackSection = `\n<hr />\n<h5>📦 مشخصات محصول:</h5>\n<ul>\n${detailItems}\n</ul>\n<hr />`;
-  return `${output}${fallbackSection}`;
+  return rebuildSpecsSectionFromData(html, rawProductName, briefDescription);
 }
 
 const SITE_CATEGORIES: Array<{ title: string; href: string; keywords: string[] }> = [
@@ -2811,14 +3003,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           productName,
           Boolean(isNutsOrDriedFruit),
         );
-        const responseData: ProductData = sanitizeCountryFieldsInProductData({
+        const withKnownDetails: ProductData = {
           ...linkedData,
-          fullDescription: ensureKnownDetailsInDescription(
+          fullDescription: rebuildSpecsSectionFromData(
             linkedData.fullDescription,
             productName,
             briefDescription || '',
           ),
-        });
+        };
+
+        const responseData: ProductData = cleanSpecsRepetitionInProductData(
+          cleanDuplicateMeasurementUnitsInProductData(
+            sanitizeCountryFieldsInProductData({
+              ...withKnownDetails,
+              fullDescription: rebuildSpecsSectionFromData(withKnownDetails.fullDescription, productName, briefDescription || ''),
+              shortDescription: hardRemoveExtraVolumeSpecsUniversal(withKnownDetails.shortDescription),
+            })
+          )
+        );
 
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('X-Mohannad-Model', model.id);
