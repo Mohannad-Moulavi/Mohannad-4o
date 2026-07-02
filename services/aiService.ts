@@ -274,6 +274,55 @@ const sampleStyleClientFinal = (data: ProductData): ProductData => {
 };
 
 
+
+const clientKnownBrandPersian = (source: string): string => {
+  const text = String(source || '');
+  const pairs: Array<[RegExp, string]> = [
+    [/\bDove\b|داو/i, 'داو'],
+    [/\bCantu\b|کانتو/i, 'کانتو'],
+    [/\bCliven\b|کلیون/i, 'کلیون'],
+    [/\bNivea\b|نیوآ/i, 'نیوآ'],
+    [/\bGarnier\b|گارنیر/i, 'گارنیر'],
+    [/\bPantene\b|پنتن/i, 'پنتن'],
+    [/\bSunsilk\b|سان‌سیلک/i, 'سان‌سیلک'],
+  ];
+  for (const [pattern, brand] of pairs) if (pattern.test(text)) return brand;
+  return '';
+};
+
+const clientIsBeautyHairSkin = (source: string): boolean =>
+  /شامپو|ماسک\s*مو|کرم\s*مو|نرم\s*کننده\s*مو|نرم‌کننده\s*مو|موهای|پوست|کرم|لوسیون|سرم|ضد\s*آفتاب|آبرسان|مرطوب|hair|shampoo|conditioner|masque|mask|leave[-\s]?in|skin|cream|lotion|serum|sunscreen|spf/i.test(String(source || ''));
+
+const clientRemoveBadFoodLinks = (html: string, source: string): string => {
+  if (!clientIsBeautyHairSkin(source)) return html;
+  return String(html || '')
+    .replace(/(?:برای مشاهده محصولات مرتبط،\s*)?دسته\s*<a href="https:\/\/noon-valqalam\.ir\/product-category\/(?:instant-coffee|coffee|hot-chocolate|beverage|saffron|gaz|sohan)[^"]*">[^<]+<\/a>[^.؟!]*[.؟!]?/gi, '')
+    .replace(/برای مشاهده محصولات مرتبط،\s*دسته\s*<a href="https:\/\/noon-valqalam\.ir\/product-category\/[^"]*">(?:قهوه فوری|قهوه|هات چاکلت|نوشیدنی|گز|سوهان|زعفران)<\/a>[^.؟!]*[.؟!]?/gi, '')
+    .trim();
+};
+
+const clientBrandAndLinkFinalFix = (data: ProductData): ProductData => {
+  const source = `${data.correctedProductName || ''} ${data.focusKeyword || ''} ${data.fullDescription || ''}`;
+  const brand = clientKnownBrandPersian(source);
+  let name = data.correctedProductName || '';
+  let focus = data.focusKeyword || '';
+
+  if (brand === 'داو' && clientIsBeautyHairSkin(source)) {
+    name = name.replace(/گز\s*داو|داو\s*گز/gi, 'محصول داو').trim();
+    focus = focus.replace(/گز\s*داو|داو\s*گز/gi, 'داو').trim();
+  }
+
+  if (brand && name && !name.includes(brand)) name = `${name} ${brand}`.replace(/\s+/g, ' ').trim();
+
+  return {
+    ...data,
+    correctedProductName: name,
+    focusKeyword: focus,
+    fullDescription: clientRemoveBadFoodLinks(data.fullDescription, source),
+  };
+};
+
+
 export const generateProductContent = async (
   productName: string,
   productImage: ImageFile | null,
@@ -310,7 +359,7 @@ export const generateProductContent = async (
     }
 
     const data: ProductData = await response.json();
-    return sampleStyleClientFinal(clientEnsureYoastFields(sanitizeProductDataOnClient(data)));
+    return clientBrandAndLinkFinalFix(sampleStyleClientFinal(clientEnsureYoastFields(sanitizeProductDataOnClient(data))));
   } catch (error) {
     console.error("Error calling backend API:", error);
     if (error instanceof Error) {

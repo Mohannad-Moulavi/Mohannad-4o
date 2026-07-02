@@ -310,6 +310,10 @@ const standardDescriptionPrompt = `
 - پوشاک: «🧵 جنس و طراحی»، «📏 راهنمای سایز»، «🧺 روش شستشو و نگهداری»، «📦 مشخصات محصول» را بنویس.
 
 # قوانین مهم
+- برندهای انگلیسی را به محصول خوراکی تبدیل نکن. مثال: Dove یعنی برند «داو»، نه «گز داو». Cantu یعنی «کانتو»، Cliven یعنی «کلیون».
+- لینک داخلی فقط باید از دسته‌بندی‌های واقعی سایت noon-valqalam.ir که در SITE_CATEGORIES آمده انتخاب شود. لینک ساختگی یا href حدسی نساز.
+- برای محصولات مو، پوست و آرایشی، لینک داخلی خوراکی مثل قهوه فوری، نوشیدنی، گز، سوهان یا زعفران ممنوع است، حتی اگر در متن کلماتی مثل butter یا caffeine دیده شد.
+- اولویت دسته‌بندی: اگر محصول شامپو/ماسک مو/کرم مو/نرم‌کننده مو است، دسته مو یا شامپو انتخاب شود؛ اگر پوست است، مراقبت پوست؛ فقط محصولات واقعاً خوراکی به دسته‌های قهوه/نوشیدنی/گز/سوهان بروند.
 - نمونه سالم Yoast: «ماسک مو کانتو شی باتر» برای محصول Cantu Shea Butter Deep Treatment Masque درست است، چون نوع محصول + برند + ماده شاخص دارد.
 - ویژگی‌های ناقص مثل «بدون» نباید انتهای کلیدواژه بمانند. مثال غلط: «کرم نرم‌کننده مو بدون». مثال درست: «کرم نرم‌کننده مو کانتو» یا «کرم مو کانتو شی باتر».
 - Yoast حرفه‌ای جدید: کلیدواژه کانونی کوتاه و قابل جستجو باشد، حداکثر ۴ واژه محتوایی. مدل، حجم، وزن، تعداد و کد محصول را داخل کلیدواژه کانونی نگذار.
@@ -1422,13 +1426,13 @@ function chooseBestInternalCategory(
   };
 }
 
-function getNaturalInlineLinkSentence(
-  rawProductName: string,
-  data: ProductData,
-  isNutsOrDriedFruit: boolean,
-): string {
-  const category = chooseBestInternalCategory(rawProductName, data, isNutsOrDriedFruit);
-  return `برای مشاهده محصولات مرتبط، دسته <a href="${category.href}">${category.title}</a> می‌تواند انتخاب‌های نزدیک‌تری به این محصول نشان دهد.`;
+function getNaturalInlineLinkSentence(rawProductName: string, data: ProductData, isNutsOrDriedFruit: boolean): string {
+  const forcedCategory = forcedRealCategoryForProduct(rawProductName, data);
+  const selected = forcedCategory || chooseBestInternalCategory(rawProductName, data, isNutsOrDriedFruit);
+
+  if (!categoryExistsInSiteList(selected)) return '';
+
+  return `برای مشاهده محصولات مرتبط، دسته <a href="${selected.href}">${selected.title}</a> می‌تواند انتخاب‌های نزدیک‌تری به این محصول نشان دهد.`;
 }
 
 function injectNaturalInlineInternalLink(html: string, sentence: string): string {
@@ -1463,16 +1467,13 @@ function ensureNaturalInlineInternalLink(
   };
 }
 
-function getManualInternalLinkAdvice(
-  rawProductName: string,
-  data: ProductData,
-  isNutsOrDriedFruit: boolean,
-): { target: string; anchor: string } {
-  const category = chooseBestInternalCategory(rawProductName, data, isNutsOrDriedFruit);
-  return {
-    target: `${category.title} — ${category.href}`,
-    anchor: data.focusKeyword || data.correctedProductName || category.title,
-  };
+function getManualInternalLinkAdvice(rawProductName: string, data: ProductData, isNutsOrDriedFruit: boolean): string {
+  const forcedCategory = forcedRealCategoryForProduct(rawProductName, data);
+  const selected = forcedCategory || chooseBestInternalCategory(rawProductName, data, isNutsOrDriedFruit);
+
+  if (!categoryExistsInSiteList(selected)) return '';
+
+  return `${selected.title} - ${selected.href}`;
 }
 
 function appendManualInternalLinkMarker(
@@ -3243,6 +3244,176 @@ function applySampleStyleYoastFix(data: ProductData, rawProductName: string, bri
     metaDescription: sampleStyleMeta(focus, data, rawProductName),
     altImageText: sampleStyleAlt(focus, data, rawProductName),
   };
+}
+
+
+
+function knownBrandPersianName(source: string): string {
+  const text = String(source || '');
+  const brandMap: Array<[RegExp, string]> = [
+    [/\bDove\b|داو/i, 'داو'],
+    [/\bCantu\b|کانتو/i, 'کانتو'],
+    [/\bCliven\b|کلیون/i, 'کلیون'],
+    [/\bNivea\b|نیوآ/i, 'نیوآ'],
+    [/\bGarnier\b|گارنیر/i, 'گارنیر'],
+    [/\bL'?Oreal\b|لورآل/i, 'لورآل'],
+    [/\bPantene\b|پنتن/i, 'پنتن'],
+    [/\bSunsilk\b|سان\s*سیلک|سان‌سیلک/i, 'سان‌سیلک'],
+    [/\bHead\s*&?\s*Shoulders\b|هد\s*اند\s*شولدرز/i, 'هد اند شولدرز'],
+    [/\bVaseline\b|وازلین/i, 'وازلین'],
+    [/\bBioderma\b|بایودرما/i, 'بایودرما'],
+    [/\bCeraVe\b|سراوی/i, 'سراوی'],
+    [/\bNeutrogena\b|نوتروژینا/i, 'نوتروژینا'],
+    [/\bSimple\b|سیمپل/i, 'سیمپل'],
+    [/\bMaybelline\b|میبلین/i, 'میبلین'],
+    [/\bEssence\b|اسنس/i, 'اسنس'],
+    [/\bFlormar\b|فلورمار/i, 'فلورمار'],
+    [/\bColgate\b|کلگیت/i, 'کلگیت'],
+    [/\bOral-?B\b|اورال\s*بی/i, 'اورال بی'],
+  ];
+
+  for (const [pattern, name] of brandMap) {
+    if (pattern.test(text)) return name;
+  }
+
+  return '';
+}
+
+function isBeautyHairSkinProductText(source: string): boolean {
+  return /شامپو|ماسک\s*مو|کرم\s*مو|نرم\s*کننده\s*مو|نرم‌کننده\s*مو|موهای|پوست|کرم|لوسیون|سرم|ضد\s*آفتاب|آبرسان|مرطوب|دئودرانت|تعریق|دهان|دندان|خمیر\s*دندان|hair|shampoo|conditioner|masque|mask|leave[-\s]?in|skin|cream|lotion|serum|sunscreen|spf|deodorant|tooth/i.test(String(source || ''));
+}
+
+function isFoodDrinkProductText(source: string): boolean {
+  const text = String(source || '');
+  if (isBeautyHairSkinProductText(text)) return false;
+  return /قهوه|کافی|هات\s*چاکلت|نوشیدنی|آب\s*معدنی|آب\s*آشامیدنی|زعفران|سوهان|گز|پسته|بادام|خوراکی|coffee|cappuccino|latte|drink|beverage|saffron|pistachio/i.test(text);
+}
+
+function categoryExistsInSiteList(category: { title: string; href: string } | null | undefined): boolean {
+  if (!category || !category.href) return false;
+  return SITE_CATEGORIES.some((item) => item.href === category.href && item.title === category.title);
+}
+
+function findRealSiteCategoryByTitle(...titles: string[]): { title: string; href: string; keywords?: string[] } | null {
+  for (const title of titles) {
+    const exact = SITE_CATEGORIES.find((item) => item.title === title);
+    if (exact) return exact;
+  }
+
+  for (const title of titles) {
+    const contains = SITE_CATEGORIES.find((item) => item.title.includes(title) || title.includes(item.title));
+    if (contains) return contains;
+  }
+
+  return null;
+}
+
+function forcedRealCategoryForProduct(rawProductName: string, data?: Partial<ProductData> | null): { title: string; href: string; keywords?: string[] } | null {
+  const source = `${rawProductName || ''} ${data?.correctedProductName || ''} ${data?.focusKeyword || ''} ${data?.fullDescription || ''} ${data?.shortDescription || ''}`;
+
+  // Beauty/hair/skin has priority over food/drink. This prevents shampoo/hair products from linking to coffee/instant coffee.
+  if (/شامپو|shampoo/i.test(source)) {
+    return findRealSiteCategoryByTitle('شامپو', 'مراقبت و زیبایی مو', 'مراقبت مو');
+  }
+  if (/ماسک\s*مو|کرم\s*مو|نرم\s*کننده\s*مو|نرم‌کننده\s*مو|leave[-\s]?in|conditioner|hair\s*mask|masque|hair/i.test(source)) {
+    return findRealSiteCategoryByTitle('مراقبت و زیبایی مو', 'مراقبت مو', 'ماسک مو', 'نرم کننده مو');
+  }
+  if (/لوسیون\s*بدن|body\s*lotion/i.test(source)) {
+    return findRealSiteCategoryByTitle('لوسیون بدن', 'مراقبت پوست');
+  }
+  if (/ضد\s*آفتاب|sunscreen|spf/i.test(source)) {
+    return findRealSiteCategoryByTitle('ضد آفتاب', 'مراقبت پوست');
+  }
+  if (/کرم|آبرسان|مرطوب|سرم\s*پوست|skin|cream|serum|moistur/i.test(source)) {
+    return findRealSiteCategoryByTitle('مراقبت پوست', 'کرم دست', 'لوسیون بدن');
+  }
+  if (/دئودرانت|ضد\s*تعریق|deodorant/i.test(source)) {
+    return findRealSiteCategoryByTitle('دئودرانت و ضد تعریق');
+  }
+  if (/خمیر\s*دندان|مسواک|دهان|دندان|tooth|oral/i.test(source)) {
+    return findRealSiteCategoryByTitle('بهداشت دهان و دندان');
+  }
+
+  // Food/drink only when product is not beauty/hair/skin.
+  if (isFoodDrinkProductText(source)) {
+    if (/قهوه\s*فوری|نسکافه|کافی\s*میت|coffee\s*mate|instant\s*coffee|nescafe/i.test(source)) {
+      return findRealSiteCategoryByTitle('قهوه فوری');
+    }
+    if (/هات\s*چاکلت|hot\s*chocolate/i.test(source)) {
+      return findRealSiteCategoryByTitle('هات چاکلت');
+    }
+    if (/قهوه|coffee|espresso|cappuccino|latte/i.test(source)) {
+      return findRealSiteCategoryByTitle('قهوه', 'قهوه فوری');
+    }
+    if (/نوشیدنی|آب\s*معدنی|آب\s*آشامیدنی|water|drink|beverage|زمزم/i.test(source)) {
+      return findRealSiteCategoryByTitle('نوشیدنی');
+    }
+    if (/زعفران|saffron/i.test(source)) return findRealSiteCategoryByTitle('زعفران');
+    if (/سوهان/i.test(source)) return findRealSiteCategoryByTitle('سوهان');
+    if (/گز/i.test(source)) return findRealSiteCategoryByTitle('گز');
+  }
+
+  return null;
+}
+
+function normalizeBrandAndBadProductName(data: ProductData, rawProductName: string): ProductData {
+  const source = `${rawProductName || ''} ${data.correctedProductName || ''} ${data.fullDescription || ''}`;
+  const brand = knownBrandPersianName(source);
+  if (!brand) return data;
+
+  let name = String(data.correctedProductName || '').trim();
+  let focus = String(data.focusKeyword || '').trim();
+  let title = String(data.seoTitle || '').trim();
+  let meta = String(data.metaDescription || '').trim();
+  let alt = String(data.altImageText || '').trim();
+
+  // Fatal wrong mapping: Dove is a cosmetics/personal-care brand, never "گز داو".
+  if (brand === 'داو' && isBeautyHairSkinProductText(source)) {
+    name = name.replace(/گز\s*داو|داو\s*گز/gi, 'محصول داو').trim();
+    focus = focus.replace(/گز\s*داو|داو\s*گز/gi, 'داو').trim();
+    title = title.replace(/گز\s*داو|داو\s*گز/gi, 'داو').trim();
+    meta = meta.replace(/گز\s*داو|داو\s*گز/gi, 'داو').trim();
+    alt = alt.replace(/گز\s*داو|داو\s*گز/gi, 'داو').trim();
+  }
+
+  // If the visible name has no Persian brand, append a clean Persian brand when it is a known Latin brand.
+  if (name && !name.includes(brand)) {
+    name = `${name} ${brand}`.replace(/\s{2,}/g, ' ').trim();
+  }
+  if (focus && !focus.includes(brand) && isBeautyHairSkinProductText(source)) {
+    const words = focus.split(/\s+/).filter(Boolean);
+    const cleanedWords = words.filter((w) => !/بدون|حاوی|وزن|حجم|مدل/.test(w));
+    focus = `${cleanedWords.join(' ')} ${brand}`.replace(/\s{2,}/g, ' ').trim();
+  }
+
+  return {
+    ...data,
+    correctedProductName: name,
+    focusKeyword: focus,
+    seoTitle: title,
+    metaDescription: meta,
+    altImageText: alt,
+  };
+}
+
+function removeBadFoodInternalLinksForBeauty(html: string, rawProductName: string, data?: Partial<ProductData> | null): string {
+  const source = `${rawProductName || ''} ${data?.correctedProductName || ''} ${data?.focusKeyword || ''} ${data?.shortDescription || ''}`;
+  if (!isBeautyHairSkinProductText(source)) return html;
+
+  let output = String(html || '');
+
+  // Remove sentences that point beauty/hair products to food/drink categories.
+  output = output.replace(
+    /(?:برای مشاهده محصولات مرتبط،\s*)?دسته\s*<a href="https:\/\/noon-valqalam\.ir\/product-category\/(?:instant-coffee|coffee|hot-chocolate|beverage|saffron|gaz|sohan)[^"]*">[^<]+<\/a>[^.؟!]*[.؟!]?/gi,
+    ''
+  );
+
+  output = output.replace(
+    /برای مشاهده محصولات مرتبط،\s*دسته\s*<a href="https:\/\/noon-valqalam\.ir\/product-category\/[^"]*">(?:قهوه فوری|قهوه|هات چاکلت|نوشیدنی|گز|سوهان|زعفران)<\/a>[^.؟!]*[.؟!]?/gi,
+    ''
+  );
+
+  return normalizeHtmlDividers(output);
 }
 
 
