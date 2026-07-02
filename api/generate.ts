@@ -310,8 +310,8 @@ const standardDescriptionPrompt = `
 - پوشاک: «🧵 جنس و طراحی»، «📏 راهنمای سایز»، «🧺 روش شستشو و نگهداری»، «📦 مشخصات محصول» را بنویس.
 
 # قوانین مهم
-- کلیدواژه کانونی باید نام/نوع محصول + برند باشد، نه ویژگی ناقص محصول. مثال غلط: «کرم نرم‌کننده مو بدون». مثال درست: «کرم نرم‌کننده مو کانتو».
-- ویژگی‌هایی مثل «بدون نیاز به آبکشی»، «حاوی شی باتر»، «وزن 340 گرم» یا «حجم 300 میلی‌لیتر» را در توضیحات و مشخصات بیاور، اما کلیدواژه کانونی را با آن‌ها نساز.
+- نمونه سالم Yoast: «ماسک مو کانتو شی باتر» برای محصول Cantu Shea Butter Deep Treatment Masque درست است، چون نوع محصول + برند + ماده شاخص دارد.
+- ویژگی‌های ناقص مثل «بدون» نباید انتهای کلیدواژه بمانند. مثال غلط: «کرم نرم‌کننده مو بدون». مثال درست: «کرم نرم‌کننده مو کانتو» یا «کرم مو کانتو شی باتر».
 - Yoast حرفه‌ای جدید: کلیدواژه کانونی کوتاه و قابل جستجو باشد، حداکثر ۴ واژه محتوایی. مدل، حجم، وزن، تعداد و کد محصول را داخل کلیدواژه کانونی نگذار.
 - کلیدواژه کانونی باید در پاراگراف اول، حداقل یک زیرعنوان h5، عنوان سئو، توضیحات متا و متن جایگزین تصویر وجود داشته باشد.
 - تراکم کلیدواژه را طبیعی نگه دار: حداقل ۲ بار و ترجیحاً ۳ بار در توضیحات کامل، اما از تکرار مصنوعی و keyword stuffing خودداری کن.
@@ -2890,83 +2890,10 @@ function persianContentWords(text: string): string[] {
     .filter((word) => word && word.length > 1 && !stopWords.has(word));
 }
 
-function normalizeKnownLatinBrandForPersianFocus(brand: string): string {
-  const clean = String(brand || '').trim();
-  const map: Record<string, string> = {
-    cantu: 'کانتو',
-    cliven: 'کلیون',
-    nivea: 'نیوآ',
-    garnier: 'گارنیر',
-    loreal: 'لورآل',
-    "lorealparis": 'لورآل',
-    dove: 'داو',
-    pantene: 'پنتن',
-    sunsilk: 'سان‌سیلک',
-    vaseline: 'وازلین',
-    bioderma: 'بایودرما',
-    cerave: 'سراوی',
-    neutrogena: 'نوتروژینا',
-    simple: 'سیمپل',
-    maybelline: 'میبلین',
-    essence: 'اسنس',
-    flormar: 'فلورمار',
-    revlon: 'رولون',
-    schwarzkopf: 'شوارتسکف',
-    schauma: 'شوما',
-    headshoulders: 'هد اند شولدرز',
-    colgate: 'کلگیت',
-    oralb: 'اورال بی',
-  };
-
-  const key = clean.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return map[key] || clean;
-}
-
-function extractBrandForYoastFocus(source: string): string {
-  const text = String(source || '');
-
-  const explicit = text.match(/(?:برند|Brand)\s*[:：]\s*([A-Za-zآ-ی\u0600-\u06FF][A-Za-zآ-ی\u0600-\u06FF\s&.'’-]{1,30})/i);
-  if (explicit?.[1]) {
-    const candidate = explicit[1].replace(/[()（）]/g, ' ').trim().split(/\s+/)[0];
-    return /^[A-Za-z]/.test(candidate) ? normalizeKnownLatinBrandForPersianFocus(candidate) : candidate;
-  }
-
-  const knownPersianBrands = ['کانتو', 'کلیون', 'نیوآ', 'گارنیر', 'لورآل', 'داو', 'پنتن', 'سان‌سیلک', 'وازلین', 'بایودرما', 'سراوی', 'نوتروژینا', 'سیمپل', 'میبلین', 'اسنس', 'فلورمار'];
-  for (const brand of knownPersianBrands) {
-    if (text.includes(brand)) return brand;
-  }
-
-  const latinTokens = text.match(/\b[A-Za-z][A-Za-z0-9&.'’-]{1,}\b/g) || [];
-  const banned = new Set([
-    'crema','polivalente','shea','butter','leave','in','leavein','conditioning','conditioner','cream','body','lotion',
-    'spf','pa','uva','uvb','ml','g','gr','oz','fl','with','for','and','the','new','original','professional','hair','skin'
-  ]);
-
-  for (const token of latinTokens) {
-    const key = token.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!key || banned.has(key) || /^[0-9]+$/.test(key)) continue;
-    return normalizeKnownLatinBrandForPersianFocus(token);
-  }
-
-  return '';
-}
-
-function cleanDanglingFocusModifiers(focus: string): string {
-  const badEndings = new Set(['بدون', 'حاوی', 'مناسب', 'برای', 'با', 'نیاز', 'به', 'دارای', 'وزن', 'حجم', 'مدل']);
-  const words = String(focus || '').replace(/\s{2,}/g, ' ').trim().split(/\s+/).filter(Boolean);
-  while (words.length > 0 && badEndings.has(words[words.length - 1])) words.pop();
-  return words.join(' ').trim();
-}
-
 function buildYoastFocusKeyword(data: ProductData, rawProductName: string): string {
-  const source = stripSpecsForYoastFocus(`${data.correctedProductName || ''} ${rawProductName || ''} ${data.focusKeyword || ''} ${data.fullDescription || ''}`);
-  const brand = extractBrandForYoastFocus(`${source} ${data.correctedProductName || ''} ${rawProductName || ''}`);
+  const source = stripSpecsForYoastFocus(`${data.correctedProductName || ''} ${rawProductName || ''} ${data.focusKeyword || ''}`);
 
-  // Focus keyphrase must be product type + brand, not an incomplete feature.
   const productTypes = [
-    'کرم نرم‌کننده مو',
-    'نرم‌کننده مو',
-    'کرم مو',
     'کرم چندمنظوره',
     'کرم ضد آفتاب',
     'ضد آفتاب',
@@ -2983,24 +2910,20 @@ function buildYoastFocusKeyword(data: ProductData, rawProductName: string): stri
     'زعفران',
     'سوهان',
     'گز',
-  ].sort((a, b) => b.length - a.length);
+  ];
+
+  const words = persianContentWords(source);
+  const brand = words.find((word) => !['کرم','چندمنظوره','ضد','آفتاب','مرطوب','کننده','آبرسان','لوسیون','بدن','شامپو','ماسک','سرم','مو'].includes(word) && word.length > 2);
 
   for (const type of productTypes) {
     if (source.includes(type)) {
-      let phrase = brand && !type.includes(brand) ? `${type} ${brand}` : type;
-      phrase = cleanDanglingFocusModifiers(phrase);
-      const words = phrase.split(/\s+/);
-      if (words.length <= 4) return phrase;
-      if (brand && (type.includes('نرم‌کننده مو') || type.includes('کرم نرم‌کننده مو'))) return `کرم مو ${brand}`.trim();
-      return cleanDanglingFocusModifiers(words.slice(0, 4).join(' '));
+      const phrase = brand && !type.includes(brand) ? `${type} ${brand}` : type;
+      return phrase.split(/\s+/).slice(0, 4).join(' ').trim();
     }
   }
 
-  const words = persianContentWords(source).filter((word) => !['بدون','حاوی','نیاز','آبکشی','دارای'].includes(word));
-  let fallback = words.slice(0, 3).join(' ').trim();
-  if (brand && !fallback.includes(brand)) fallback = `${fallback} ${brand}`.trim();
-  fallback = cleanDanglingFocusModifiers(fallback).split(/\s+/).slice(0, 4).join(' ').trim();
-  return fallback || brand || cleanDanglingFocusModifiers(stripSpecsForYoastFocus(data.focusKeyword || data.correctedProductName || rawProductName).split(/\s+/).slice(0, 4).join(' '));
+  const candidate = words.slice(0, 4).join(' ').trim();
+  return candidate || stripSpecsForYoastFocus(data.focusKeyword || data.correctedProductName || rawProductName).split(/\s+/).slice(0, 4).join(' ').trim();
 }
 
 function escapeRegex(value: string): string {
@@ -3125,6 +3048,200 @@ function applyProfessionalYoastRules(data: ProductData, rawProductName: string, 
     seoTitle: ensureYoastTitle(data.seoTitle, focus),
     metaDescription: ensureYoastMeta(data.metaDescription, focus),
     altImageText: ensureYoastAlt(data.altImageText, focus),
+  };
+}
+
+
+
+function sampleStyleBrand(source: string): string {
+  const text = String(source || '');
+  const map: Record<string, string> = {
+    cantu: 'کانتو',
+    cliven: 'کلیون',
+    nivea: 'نیوآ',
+    garnier: 'گارنیر',
+    loreal: 'لورآل',
+    dove: 'داو',
+    pantene: 'پنتن',
+    sunsilk: 'سان‌سیلک',
+    vaseline: 'وازلین',
+    bioderma: 'بایودرما',
+    cerave: 'سراوی',
+    neutrogena: 'نوتروژینا',
+  };
+
+  for (const brand of Object.values(map)) {
+    if (text.includes(brand)) return brand;
+  }
+
+  const latin = text.match(/\b[A-Za-z][A-Za-z0-9&.'’-]{1,}\b/g) || [];
+  const banned = new Set(['crema','polivalente','shea','butter','leave','in','leavein','deep','treatment','masque','mask','conditioning','conditioner','cream','body','lotion','spf','pa','ml','g','oz','with','for','and']);
+  for (const token of latin) {
+    const key = token.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!key || banned.has(key)) continue;
+    return map[key] || token;
+  }
+
+  return '';
+}
+
+function sampleStyleIngredient(source: string): string {
+  const text = String(source || '');
+  if (/شی\s*باتر|shea\s*butter/i.test(text)) return 'شی باتر';
+  if (/ویتامین\s*e|vitamin\s*e/i.test(text)) return 'ویتامین E';
+  if (/پروویتامین\s*b5|provitamin\s*b5|panthenol|پانتنول/i.test(text)) return 'پروویتامین B5';
+  if (/کراتین|keratin/i.test(text)) return 'کراتین';
+  if (/آرگان|argan/i.test(text)) return 'آرگان';
+  if (/آلوئه\s*ورا|aloe\s*vera/i.test(text)) return 'آلوئه ورا';
+  return '';
+}
+
+function sampleStyleAudience(source: string): string {
+  const text = String(source || '').toLowerCase();
+  if (/فر|مجعد|curly|coily|wavy/.test(text)) return 'موهای فر و مجعد';
+  if (/خشک|dry/.test(text)) return 'موهای خشک';
+  if (/آسیب\s*دیده|damaged/.test(text)) return 'موهای آسیب‌دیده';
+  if (/رنگ\s*شده|colored/.test(text)) return 'موهای رنگ‌شده';
+  return '';
+}
+
+function sampleStyleProductType(source: string): string {
+  const text = String(source || '');
+  const types = [
+    'ماسک مو عمیق',
+    'ماسک مو',
+    'کرم نرم‌کننده مو',
+    'نرم‌کننده مو',
+    'کرم مو',
+    'کرم چندمنظوره',
+    'کرم ضد آفتاب',
+    'ضد آفتاب',
+    'کرم مرطوب کننده',
+    'کرم آبرسان',
+    'لوسیون بدن',
+    'شامپو',
+    'سرم مو',
+    'قهوه فوری',
+    'هات چاکلت',
+    'نوشیدنی',
+    'زعفران',
+    'سوهان',
+    'گز',
+  ].sort((a, b) => b.length - a.length);
+
+  for (const type of types) {
+    if (text.includes(type)) return type;
+  }
+  return '';
+}
+
+function sampleStyleFocusKeyword(data: ProductData, rawProductName: string): string {
+  const source = `${data.correctedProductName || ''} ${rawProductName || ''} ${data.focusKeyword || ''} ${data.fullDescription || ''}`;
+  const type = sampleStyleProductType(source);
+  const brand = sampleStyleBrand(source);
+  const ingredient = sampleStyleIngredient(source);
+
+  if (type) {
+    let focus = [type, brand, ingredient].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+
+    // Avoid bad dangling words from descriptors.
+    focus = focus.replace(/\s+(بدون|حاوی|مناسب|وزن|حجم|مدل)$/g, '').trim();
+
+    // Healthy example allows "ماسک مو کانتو شی باتر".
+    if (focus.split(/\s+/).length <= 6) return focus;
+
+    // Short fallback preserving brand.
+    if (/نرم‌کننده\s*مو|کرم\s*نرم‌کننده\s*مو/.test(type) && brand) return `کرم مو ${brand}${ingredient ? ' ' + ingredient : ''}`.trim();
+    return [type, brand].filter(Boolean).join(' ').trim();
+  }
+
+  const fallback = String(data.focusKeyword || data.correctedProductName || rawProductName || '')
+    .replace(/\s+مدل\s+[A-Za-z0-9][A-Za-z0-9\s\-_.]+/gi, ' ')
+    .replace(/\s+حجم\s*[:：]?\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s*(?:میلی[\s\u200c]*لیتر|میل[\s\u200c]*لیتر|ml|mL|گرم|g|gr|oz|fl\s*oz|لیتر)/gi, ' ')
+    .replace(/\s+(بدون|حاوی|مناسب|وزن|حجم|مدل)$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const words = fallback.split(/\s+/).slice(0, 5).join(' ');
+  return words || brand || 'محصول';
+}
+
+function sampleStyleSeoTitle(focus: string, data: ProductData, rawProductName: string): string {
+  const source = `${data.correctedProductName || ''} ${rawProductName || ''} ${data.fullDescription || ''}`;
+  const audience = sampleStyleAudience(source);
+  let benefit = '';
+
+  if (/ماسک\s*مو|نرم‌کننده\s*مو|کرم\s*مو/.test(focus)) {
+    benefit = audience ? `تقویت‌کننده ${audience}` : 'ترمیم و تقویت مو';
+  } else if (/ضد\s*آفتاب/.test(focus)) {
+    benefit = 'محافظت روزانه پوست';
+  } else if (/کرم|لوسیون|آبرسان|مرطوب/.test(focus)) {
+    benefit = 'مراقبت و رطوبت‌رسانی پوست';
+  }
+
+  let title = benefit ? `خرید ${focus} | ${benefit}` : `خرید ${focus} | نون و القلم`;
+  if (title.length > 65) title = `خرید ${focus} | نون و القلم`;
+  if (title.length > 65) title = title.slice(0, 62).replace(/\s+\S*$/, '') + '...';
+  return title;
+}
+
+function sampleStyleMeta(focus: string, data: ProductData, rawProductName: string): string {
+  const source = `${data.correctedProductName || ''} ${rawProductName || ''} ${data.fullDescription || ''}`;
+  const audience = sampleStyleAudience(source);
+  const ingredient = sampleStyleIngredient(source);
+
+  let meta = '';
+  if (/ماسک\s*مو|نرم‌کننده\s*مو|کرم\s*مو/.test(focus)) {
+    meta = `${focus}${ingredient && !focus.includes(ingredient) ? ' حاوی ' + ingredient : ''}${audience ? ' برای ' + audience : ''} برای ترمیم، رطوبت‌رسانی و تقویت مو مناسب است. مشخصات محصول را بررسی کنید و خریدی مطمئن داشته باشید.`;
+  } else if (/کرم|لوسیون|آبرسان|مرطوب|ضد\s*آفتاب/.test(focus)) {
+    meta = `${focus}${ingredient && !focus.includes(ingredient) ? ' با ' + ingredient : ''} برای مراقبت روزانه، رطوبت‌رسانی و محافظت از پوست مناسب است. مشخصات محصول را بررسی کنید و انتخابی مطمئن داشته باشید.`;
+  } else {
+    meta = `خرید ${focus} با بررسی مشخصات، کاربرد و توضیحات محصول در فروشگاه نون و القلم. انتخابی مطمئن برای خرید روزانه.`;
+  }
+
+  if (meta.length < 120) meta += ` ${focus} را با توضیحات کامل و مشخصات دقیق بررسی کنید.`;
+  if (meta.length > 155) meta = meta.slice(0, 152).replace(/\s+\S*$/, '') + '...';
+  if (!meta.includes(focus)) meta = `خرید ${focus}؛ ${meta}`.slice(0, 155);
+  return meta.trim();
+}
+
+function sampleStyleAlt(focus: string, data: ProductData, rawProductName: string): string {
+  const source = `${data.correctedProductName || ''} ${rawProductName || ''} ${data.fullDescription || ''}`;
+  const audience = sampleStyleAudience(source);
+  if (/ماسک\s*مو/.test(focus)) return audience ? `${focus} برای ${audience}` : `${focus} برای ترمیم و تقویت مو`;
+  if (/نرم‌کننده\s*مو|کرم\s*مو/.test(focus)) return audience ? `${focus} برای ${audience}` : `${focus} برای نرمی و مراقبت مو`;
+  return `تصویر محصول ${focus} برای معرفی و خرید در نون و القلم`;
+}
+
+function sampleStyleEnsureFocusInContent(html: string, focus: string): string {
+  let output = String(html || '');
+  if (!focus) return output;
+
+  if (!new RegExp(escapeRegex(focus), 'i').test(output.replace(/<[^>]+>/g, ' '))) {
+    output = output.replace(/<p>/i, `<p>${escapeHtmlText(focus)}؛ `);
+  }
+
+  if (!new RegExp(`<h[2-6][^>]*>[^<]*${escapeRegex(focus)}`, 'i').test(output)) {
+    output = output.replace(/<h5>\s*✅\s*ویژگی‌های\s*اصلی\s*:?\s*<\/h5>/i, `<h5>✅ ویژگی‌های ${escapeHtmlText(focus)}:</h5>`);
+  }
+
+  if (phraseCount(output, focus) < 2) {
+    output = output.replace(/<h5>\s*✨\s*مزایای\s*استفاده\s*:?\s*<\/h5>\s*<p>/i, (m) => `${m}${escapeHtmlText(focus)} برای استفاده روزانه و انتخاب محصول مناسب اهمیت دارد. `);
+  }
+
+  return normalizeHtmlDividers(output);
+}
+
+function applySampleStyleYoastFix(data: ProductData, rawProductName: string, briefDescription: string): ProductData {
+  const focus = sampleStyleFocusKeyword(data, rawProductName);
+  return {
+    ...data,
+    focusKeyword: focus,
+    fullDescription: sampleStyleEnsureFocusInContent(data.fullDescription, focus),
+    shortDescription: String(data.shortDescription || '').includes(focus) ? data.shortDescription : `${focus}؛ ${data.shortDescription || ''}`.trim(),
+    seoTitle: sampleStyleSeoTitle(focus, data, rawProductName),
+    metaDescription: sampleStyleMeta(focus, data, rawProductName),
+    altImageText: sampleStyleAlt(focus, data, rawProductName),
   };
 }
 
@@ -3265,7 +3382,7 @@ async function callGitHubModel(
       generatedData.fullDescription = normalizeHtmlDividers(hardRemoveExtraVolumeSpecsUniversal(generatedData.fullDescription));
       generatedData.shortDescription = hardRemoveExtraVolumeSpecsUniversal(generatedData.shortDescription);
       validateProductData(generatedData, isNutsOrDriedFruit);
-      return absoluteFinalOutputClean(applyProfessionalYoastRules(generatedData, productName, briefDescription));
+      return absoluteFinalOutputClean(applySampleStyleYoastFix(applyProfessionalYoastRules(generatedData, productName, briefDescription), productName, briefDescription));
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
@@ -3353,7 +3470,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('X-Mohannad-Model', model.id);
-        return res.status(200).json(absoluteFinalOutputClean(applyProfessionalYoastRules(responseData, productName, briefDescription || '')));
+        return res.status(200).json(absoluteFinalOutputClean(applySampleStyleYoastFix(applyProfessionalYoastRules(responseData, productName, briefDescription || ''), productName, briefDescription || '')));
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`Model failed: ${message}`);
