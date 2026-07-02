@@ -310,6 +310,8 @@ const standardDescriptionPrompt = `
 - پوشاک: «🧵 جنس و طراحی»، «📏 راهنمای سایز»، «🧺 روش شستشو و نگهداری»، «📦 مشخصات محصول» را بنویس.
 
 # قوانین مهم
+- کلیدواژه کانونی باید نام/نوع محصول + برند باشد، نه ویژگی ناقص محصول. مثال غلط: «کرم نرم‌کننده مو بدون». مثال درست: «کرم نرم‌کننده مو کانتو».
+- ویژگی‌هایی مثل «بدون نیاز به آبکشی»، «حاوی شی باتر»، «وزن 340 گرم» یا «حجم 300 میلی‌لیتر» را در توضیحات و مشخصات بیاور، اما کلیدواژه کانونی را با آن‌ها نساز.
 - Yoast حرفه‌ای جدید: کلیدواژه کانونی کوتاه و قابل جستجو باشد، حداکثر ۴ واژه محتوایی. مدل، حجم، وزن، تعداد و کد محصول را داخل کلیدواژه کانونی نگذار.
 - کلیدواژه کانونی باید در پاراگراف اول، حداقل یک زیرعنوان h5، عنوان سئو، توضیحات متا و متن جایگزین تصویر وجود داشته باشد.
 - تراکم کلیدواژه را طبیعی نگه دار: حداقل ۲ بار و ترجیحاً ۳ بار در توضیحات کامل، اما از تکرار مصنوعی و keyword stuffing خودداری کن.
@@ -2888,10 +2890,83 @@ function persianContentWords(text: string): string[] {
     .filter((word) => word && word.length > 1 && !stopWords.has(word));
 }
 
-function buildYoastFocusKeyword(data: ProductData, rawProductName: string): string {
-  const source = stripSpecsForYoastFocus(`${data.correctedProductName || ''} ${rawProductName || ''} ${data.focusKeyword || ''}`);
+function normalizeKnownLatinBrandForPersianFocus(brand: string): string {
+  const clean = String(brand || '').trim();
+  const map: Record<string, string> = {
+    cantu: 'کانتو',
+    cliven: 'کلیون',
+    nivea: 'نیوآ',
+    garnier: 'گارنیر',
+    loreal: 'لورآل',
+    "lorealparis": 'لورآل',
+    dove: 'داو',
+    pantene: 'پنتن',
+    sunsilk: 'سان‌سیلک',
+    vaseline: 'وازلین',
+    bioderma: 'بایودرما',
+    cerave: 'سراوی',
+    neutrogena: 'نوتروژینا',
+    simple: 'سیمپل',
+    maybelline: 'میبلین',
+    essence: 'اسنس',
+    flormar: 'فلورمار',
+    revlon: 'رولون',
+    schwarzkopf: 'شوارتسکف',
+    schauma: 'شوما',
+    headshoulders: 'هد اند شولدرز',
+    colgate: 'کلگیت',
+    oralb: 'اورال بی',
+  };
 
+  const key = clean.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return map[key] || clean;
+}
+
+function extractBrandForYoastFocus(source: string): string {
+  const text = String(source || '');
+
+  const explicit = text.match(/(?:برند|Brand)\s*[:：]\s*([A-Za-zآ-ی\u0600-\u06FF][A-Za-zآ-ی\u0600-\u06FF\s&.'’-]{1,30})/i);
+  if (explicit?.[1]) {
+    const candidate = explicit[1].replace(/[()（）]/g, ' ').trim().split(/\s+/)[0];
+    return /^[A-Za-z]/.test(candidate) ? normalizeKnownLatinBrandForPersianFocus(candidate) : candidate;
+  }
+
+  const knownPersianBrands = ['کانتو', 'کلیون', 'نیوآ', 'گارنیر', 'لورآل', 'داو', 'پنتن', 'سان‌سیلک', 'وازلین', 'بایودرما', 'سراوی', 'نوتروژینا', 'سیمپل', 'میبلین', 'اسنس', 'فلورمار'];
+  for (const brand of knownPersianBrands) {
+    if (text.includes(brand)) return brand;
+  }
+
+  const latinTokens = text.match(/\b[A-Za-z][A-Za-z0-9&.'’-]{1,}\b/g) || [];
+  const banned = new Set([
+    'crema','polivalente','shea','butter','leave','in','leavein','conditioning','conditioner','cream','body','lotion',
+    'spf','pa','uva','uvb','ml','g','gr','oz','fl','with','for','and','the','new','original','professional','hair','skin'
+  ]);
+
+  for (const token of latinTokens) {
+    const key = token.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!key || banned.has(key) || /^[0-9]+$/.test(key)) continue;
+    return normalizeKnownLatinBrandForPersianFocus(token);
+  }
+
+  return '';
+}
+
+function cleanDanglingFocusModifiers(focus: string): string {
+  const badEndings = new Set(['بدون', 'حاوی', 'مناسب', 'برای', 'با', 'نیاز', 'به', 'دارای', 'وزن', 'حجم', 'مدل']);
+  const words = String(focus || '').replace(/\s{2,}/g, ' ').trim().split(/\s+/).filter(Boolean);
+  while (words.length > 0 && badEndings.has(words[words.length - 1])) words.pop();
+  return words.join(' ').trim();
+}
+
+function buildYoastFocusKeyword(data: ProductData, rawProductName: string): string {
+  const source = stripSpecsForYoastFocus(`${data.correctedProductName || ''} ${rawProductName || ''} ${data.focusKeyword || ''} ${data.fullDescription || ''}`);
+  const brand = extractBrandForYoastFocus(`${source} ${data.correctedProductName || ''} ${rawProductName || ''}`);
+
+  // Focus keyphrase must be product type + brand, not an incomplete feature.
   const productTypes = [
+    'کرم نرم‌کننده مو',
+    'نرم‌کننده مو',
+    'کرم مو',
     'کرم چندمنظوره',
     'کرم ضد آفتاب',
     'ضد آفتاب',
@@ -2908,20 +2983,24 @@ function buildYoastFocusKeyword(data: ProductData, rawProductName: string): stri
     'زعفران',
     'سوهان',
     'گز',
-  ];
-
-  const words = persianContentWords(source);
-  const brand = words.find((word) => !['کرم','چندمنظوره','ضد','آفتاب','مرطوب','کننده','آبرسان','لوسیون','بدن','شامپو','ماسک','سرم','مو'].includes(word) && word.length > 2);
+  ].sort((a, b) => b.length - a.length);
 
   for (const type of productTypes) {
     if (source.includes(type)) {
-      const phrase = brand && !type.includes(brand) ? `${type} ${brand}` : type;
-      return phrase.split(/\s+/).slice(0, 4).join(' ').trim();
+      let phrase = brand && !type.includes(brand) ? `${type} ${brand}` : type;
+      phrase = cleanDanglingFocusModifiers(phrase);
+      const words = phrase.split(/\s+/);
+      if (words.length <= 4) return phrase;
+      if (brand && (type.includes('نرم‌کننده مو') || type.includes('کرم نرم‌کننده مو'))) return `کرم مو ${brand}`.trim();
+      return cleanDanglingFocusModifiers(words.slice(0, 4).join(' '));
     }
   }
 
-  const candidate = words.slice(0, 4).join(' ').trim();
-  return candidate || stripSpecsForYoastFocus(data.focusKeyword || data.correctedProductName || rawProductName).split(/\s+/).slice(0, 4).join(' ').trim();
+  const words = persianContentWords(source).filter((word) => !['بدون','حاوی','نیاز','آبکشی','دارای'].includes(word));
+  let fallback = words.slice(0, 3).join(' ').trim();
+  if (brand && !fallback.includes(brand)) fallback = `${fallback} ${brand}`.trim();
+  fallback = cleanDanglingFocusModifiers(fallback).split(/\s+/).slice(0, 4).join(' ').trim();
+  return fallback || brand || cleanDanglingFocusModifiers(stripSpecsForYoastFocus(data.focusKeyword || data.correctedProductName || rawProductName).split(/\s+/).slice(0, 4).join(' '));
 }
 
 function escapeRegex(value: string): string {

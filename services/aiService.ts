@@ -183,21 +183,51 @@ const finalCleanClientText = (input: string): string => {
 };
 
 
+const clientBrandForFocus = (source: string): string => {
+  const text = String(source || '');
+  const map: Record<string, string> = {
+    cantu: 'کانتو',
+    cliven: 'کلیون',
+    nivea: 'نیوآ',
+    garnier: 'گارنیر',
+    loreal: 'لورآل',
+    dove: 'داو',
+    pantene: 'پنتن',
+    sunsilk: 'سان‌سیلک',
+    vaseline: 'وازلین',
+    bioderma: 'بایودرما',
+    cerave: 'سراوی',
+    neutrogena: 'نوتروژینا',
+  };
+  for (const brand of Object.values(map)) if (text.includes(brand)) return brand;
+  const latin = text.match(/\b[A-Za-z][A-Za-z0-9&.'’-]{1,}\b/g) || [];
+  const banned = new Set(['crema','polivalente','shea','butter','leave','in','conditioning','conditioner','cream','spf','pa','ml','g','oz','body','lotion','hair','skin']);
+  for (const token of latin) {
+    const key = token.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (banned.has(key)) continue;
+    return map[key] || token;
+  }
+  return '';
+};
+
 const clientYoastFocus = (data: ProductData): string => {
-  const stop = new Set(['مدل','حجم','وزن','عدد','تعداد','خرید','قیمت','محصول','برای','مناسب','انواع']);
-  const source = String(data.focusKeyword || data.correctedProductName || '')
-    .replace(/\s+مدل\s+[A-Za-z0-9][A-Za-z0-9\s\-_.]+/gi, ' ')
+  const source = String(`${data.focusKeyword || ''} ${data.correctedProductName || ''} ${data.fullDescription || ''}`)
     .replace(/\s+حجم\s*[:：]?\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s*(?:میلی[\s\u200c]*لیتر|میل[\s\u200c]*لیتر|ml|mL|گرم|g|gr|oz|fl\s*oz|لیتر)/gi, ' ')
-    .replace(/[()（）،,:：؛\-|]+/g, ' ')
+    .replace(/\s+وزن\s*[:：]?\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s*(?:گرم|g|gr|کیلوگرم|kg)/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-
-  const words = source
-    .split(/\s+/)
-    .map((word) => word.replace(/[^\u0600-\u06FF‌]/g, '').trim())
-    .filter((word) => word && !stop.has(word));
-
-  return words.slice(0, 4).join(' ').trim() || data.focusKeyword || '';
+  const brand = clientBrandForFocus(source);
+  const productTypes = ['کرم نرم‌کننده مو', 'نرم‌کننده مو', 'کرم مو', 'کرم چندمنظوره', 'کرم ضد آفتاب', 'ضد آفتاب', 'کرم مرطوب کننده', 'کرم آبرسان', 'لوسیون بدن', 'شامپو', 'ماسک مو', 'سرم مو'];
+  for (const type of productTypes) {
+    if (source.includes(type)) {
+      const phrase = brand && !type.includes(brand) ? `${type} ${brand}` : type;
+      const words = phrase.split(/\s+/);
+      if (words.length <= 4) return phrase;
+      if (brand && type.includes('نرم‌کننده مو')) return `کرم مو ${brand}`;
+      return words.slice(0, 4).join(' ');
+    }
+  }
+  return String(data.focusKeyword || '').replace(/\s+(بدون|حاوی|نیاز|دارای)$/g, '').split(/\s+/).slice(0, 4).join(' ').trim();
 };
 
 const clientEnsureYoastFields = (data: ProductData): ProductData => {
